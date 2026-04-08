@@ -1,81 +1,90 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Text, Card, Button, Badge } from '../../components/ui';
+import { useQuery } from '@tanstack/react-query';
+import { Text, Card, Button, Badge, ScreenSkeleton } from '../../components/ui';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-
-const mockFees = [
-  { type: 'الرسوم الدراسية', amount: '١,٠٠٠ د.ك', paid: false },
-  { type: 'رسوم المختبر', amount: '١٥٠ د.ك', paid: false },
-  { type: 'رسوم التسجيل', amount: '١٠٠ د.ك', paid: true },
-];
-
-const mockPayments = [
-  { date: '١ مارس ٢٠٢٦', amount: '١,٢٠٠ د.ك', method: 'KNET', status: 'completed' },
-  { date: '١ فبراير ٢٠٢٦', amount: '١,٢٠٠ د.ك', method: 'KNET', status: 'completed' },
-];
+import { academicApi } from '../../services/api';
 
 export function PaymentDashboardScreen() {
   const { t } = useTranslation();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['student', 'fees'],
+    queryFn: () => academicApi.getFees(),
+  });
+
+  if (isLoading) return <ScreenSkeleton />;
+
+  const dashboard = data?.data;
+  const currency = dashboard?.currency || 'KWD';
+  const formatter = new Intl.NumberFormat('ar', { style: 'currency', currency });
 
   return (
     <View style={styles.container}>
       {/* Balance Header */}
       <View style={styles.header}>
-        <Text variant="body" color={colors.textInverse}>
-          {t('payments.balance')}
-        </Text>
+        <Text variant="body" color={colors.textInverse}>{t('payments.balance')}</Text>
         <Text variant="h1" color={colors.secondary} style={styles.amount}>
-          ١,٢٥٠ د.ك
+          {dashboard?.balance_due != null ? formatter.format(dashboard.balance_due) : '—'}
         </Text>
-        <Text variant="caption" color={colors.textInverse}>
-          {t('payments.dueDate')}: ١٥ أبريل ٢٠٢٦
-        </Text>
+        {dashboard?.next_due_date && (
+          <Text variant="caption" color={colors.textInverse}>
+            {t('payments.dueDate')}: {new Date(dashboard.next_due_date).toLocaleDateString('ar')}
+          </Text>
+        )}
         <Button
           title={t('payments.payNow')}
           onPress={() => {}}
           variant="secondary"
           style={styles.payButton}
+          disabled={!dashboard?.balance_due || dashboard.balance_due <= 0}
         />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Fee Breakdown */}
         <Card elevation="md" style={styles.card}>
-          <Text variant="h3" style={styles.sectionTitle}>
-            تفاصيل الرسوم
-          </Text>
-          {mockFees.map((fee, i) => (
-            <View key={i} style={styles.feeRow}>
-              <Text variant="body">{fee.type}</Text>
-              <View style={styles.feeRight}>
-                <Text variant="bodyBold">{fee.amount}</Text>
-                <Badge
-                  label={fee.paid ? t('payments.paid') : t('payments.pending')}
-                  variant={fee.paid ? 'success' : 'warning'}
-                />
+          <Text variant="h3" style={styles.sectionTitle}>تفاصيل الرسوم</Text>
+          {dashboard?.fees?.map((fee: any, i: number) => {
+            const isPaid = parseFloat(fee.paid_amount) >= parseFloat(fee.amount);
+            return (
+              <View key={i} style={styles.feeRow}>
+                <Text variant="body">{fee.description_ar}</Text>
+                <View style={styles.feeRight}>
+                  <Text variant="bodyBold">{formatter.format(parseFloat(fee.amount))}</Text>
+                  <Badge
+                    label={isPaid ? t('payments.paid') : t('payments.pending')}
+                    variant={isPaid ? 'success' : 'warning'}
+                  />
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </Card>
 
         {/* Payment History */}
         <Card elevation="md" style={styles.card}>
-          <Text variant="h3" style={styles.sectionTitle}>
-            {t('payments.history')}
-          </Text>
-          {mockPayments.map((payment, i) => (
-            <View key={i} style={styles.feeRow}>
-              <View>
-                <Text variant="body">{payment.amount}</Text>
-                <Text variant="caption" color={colors.textSecondary}>
-                  {payment.date} • {payment.method}
-                </Text>
+          <Text variant="h3" style={styles.sectionTitle}>{t('payments.history')}</Text>
+          {dashboard?.recent_payments?.length > 0 ? (
+            dashboard.recent_payments.map((payment: any, i: number) => (
+              <View key={i} style={styles.feeRow}>
+                <View>
+                  <Text variant="body">{formatter.format(parseFloat(payment.amount))}</Text>
+                  <Text variant="caption" color={colors.textSecondary}>
+                    {new Date(payment.created_at).toLocaleDateString('ar')} • {payment.method || 'KNET'}
+                  </Text>
+                </View>
+                <Badge
+                  label={payment.status === 'completed' ? t('payments.paid') : t('payments.pending')}
+                  variant={payment.status === 'completed' ? 'success' : 'warning'}
+                />
               </View>
-              <Badge label={t('payments.paid')} variant="success" />
-            </View>
-          ))}
+            ))
+          ) : (
+            <Text variant="body" color={colors.textSecondary}>{t('common.noData')}</Text>
+          )}
         </Card>
       </ScrollView>
     </View>

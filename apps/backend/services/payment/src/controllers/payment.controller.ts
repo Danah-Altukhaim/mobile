@@ -1,120 +1,228 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import type { AuthRequest } from '@masari/backend-shared';
+import { paymentQueries } from '@masari/backend-shared';
 
-const TAP_WEBHOOK_SECRET = process.env.TAP_WEBHOOK_SECRET || 'tap_test_secret';
+const TAP_SECRET_KEY = process.env.TAP_SECRET_KEY || 'tap_test_secret';
 
 export class PaymentController {
   /** POST /api/v1/payments/initiate */
-  initiatePayment = (req: AuthRequest, res: Response): void => {
-    const { amount, currency, fee_ids, redirect_url } = req.body;
+  initiatePayment = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { amount, fee_ids, method, return_url } = req.body;
 
-    if (!amount || !fee_ids?.length) {
-      res.status(400).json({
+      if (!amount || !fee_ids?.length) {
+        res.status(400).json({
+          success: false,
+          errors: [
+            {
+              code: 'VALIDATION_ERROR',
+              message_ar: 'المبلغ ومعرفات الرسوم مطلوبة',
+              message_en: 'amount and fee_ids are required',
+            },
+          ],
+        });
+        return;
+      }
+
+      // Generate idempotency key from fee_ids + student_id
+      const idempotencyKey = crypto
+        .createHash('sha256')
+        .update(`${req.user.id}:${fee_ids.sort().join(',')}`)
+        .digest('hex');
+
+      // Create payment record in DB
+      const payment = await paymentQueries.createPayment({
+        studentId: req.user.id,
+        termId: req.body.term_id || 'current',
+        amount,
+        currency: req.body.currency || 'SAR',
+        method: method || 'card',
+        feeIds: fee_ids,
+        idempotencyKey,
+      });
+
+      // In production, this would call Tap Payments API to create a charge
+      // For now, return a mock redirect URL
+      const mockTapChargeId = `chg_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
+      const redirectUrl = return_url
+        ? `${return_url}?payment_id=${payment.id}&tap_id=${mockTapChargeId}`
+        : `https://checkout.tap.company/v2/checkout/${mockTapChargeId}`;
+
+      res.json({
+        success: true,
+        data: {
+          payment_id: payment.id,
+          redirect_url: redirectUrl,
+          tap_charge_id: mockTapChargeId,
+        },
+        meta: {
+          synced_at: new Date().toISOString(),
+        },
+      });
+    } catch (err: any) {
+      console.error('[Payment Initiate] Error:', err);
+      res.status(500).json({
         success: false,
         errors: [
           {
-            code: 'VALIDATION_ERROR',
-            message_ar: 'المبلغ ومعرفات الرسوم مطلوبة',
-            message_en: 'amount and fee_ids are required',
+            code: 'INTERNAL_ERROR',
+            message_ar: 'حدث خطأ أثناء إنشاء عملية الدفع',
+            message_en: 'An error occurred while creating the payment',
           },
         ],
       });
-      return;
     }
-
-    const paymentId = `pay_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
-
-    res.json({
-      success: true,
-      data: {
-        payment_id: paymentId,
-        amount: amount,
-        currency: currency || 'SAR',
-        status: 'pending',
-        tap_url: `https://checkout.tap.company/v2/checkout/${paymentId}`,
-        redirect_url: redirect_url || 'https://masari.app/payments/callback',
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      },
-      meta: {
-        synced_at: new Date().toISOString(),
-      },
-    });
   };
 
   /** POST /api/v1/payments/webhook */
-  handleWebhook = (req: Request, res: Response): void => {
-    const signature = req.headers['tap-signature'] as string;
+  handleWebhook = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const signature = req.headers['tap-signature'] as string;
 
-    if (!signature) {
-      res.status(401).json({
+      if (!signature) {
+        res.status(401).json({
+          success: false,
+          errors: [
+            {
+              code: 'WEBHOOK_UNAUTHORIZED',
+              message_ar: 'توقيع الطلب مفقود',
+              message_en: 'Missing webhook signature',
+            },
+          ],
+        });
+        return;
+      }
+
+      // Verify HMAC-SHA256 signature
+      const expectedSignature = crypto
+        .createHmac('sha256', TAP_SECRET_KEY)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+
+      if (signature !== expectedSignature) {
+        res.status(401).json({
+          success: false,
+          errors: [
+            {
+              code: 'WEBHOOK_UNAUTHORIZED',
+              message_ar: 'توقيع الطلب غير صالح',
+              message_en: 'Invalid webhook signature',
+            },
+          ],
+        });
+        return;
+      }
+
+      const { id, status, reference, amount } = req.body;
+
+      console.log(`[Payment Webhook] Received: id=${id}, status=${status}, amount=${amount}`);
+
+      // Map Tap status to our status
+      let internalStatus: 'completed' | 'failed' | 'refunded';
+      switch (status) {
+        case 'CAPTURED':
+          internalStatus = 'completed';
+          break;
+        case 'REFUNDED':
+          internalStatus = 'refunded';
+          break;
+        default:
+          internalStatus = 'failed';
+          break;
+      }
+
+      // Update payment status (also auto-applies payment to fees if completed)
+      await paymentQueries.updatePaymentStatus(reference, internalStatus, id);
+
+      res.status(200).json({ success: true });
+    } catch (err: any) {
+      console.error('[Payment Webhook] Error:', err);
+      res.status(500).json({
         success: false,
         errors: [
           {
-            code: 'WEBHOOK_UNAUTHORIZED',
-            message_ar: 'توقيع الطلب مفقود',
-            message_en: 'Missing webhook signature',
+            code: 'INTERNAL_ERROR',
+            message_ar: 'حدث خطأ أثناء معالجة الإشعار',
+            message_en: 'An error occurred while processing the webhook',
           },
         ],
       });
-      return;
     }
-
-    // Mock signature verification
-    const expectedSignature = crypto
-      .createHmac('sha256', TAP_WEBHOOK_SECRET)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
-
-    if (signature !== expectedSignature) {
-      console.warn('[Payment Webhook] Signature mismatch - proceeding in dev mode');
-    }
-
-    const { id, status, amount, currency, metadata } = req.body;
-
-    console.log(`[Payment Webhook] Received: id=${id}, status=${status}, amount=${amount} ${currency}`);
-    console.log(`[Payment Webhook] Metadata:`, metadata);
-
-    // In production: update payment record, trigger notifications, etc.
-
-    res.status(200).json({ success: true });
   };
 
   /** GET /api/v1/payments/:id/receipt */
-  getReceipt = (req: AuthRequest, res: Response): void => {
-    const { id } = req.params;
+  getReceipt = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
 
-    res.json({
-      success: true,
-      data: {
-        payment_id: id,
-        receipt_number: `RCP-${Date.now().toString(36).toUpperCase()}`,
-        student_name_ar: 'دانة بنت عبدالله العتيبي',
-        student_name_en: 'Danah Abdullah Al-Otaibi',
-        student_id: 'STU-443012',
-        university_ar: 'جامعة الملك سعود',
-        university_en: 'King Saud University',
-        items: [
+      const payment = await paymentQueries.getPaymentById(id);
+
+      if (!payment) {
+        res.status(404).json({
+          success: false,
+          errors: [
+            {
+              code: 'NOT_FOUND',
+              message_ar: 'عملية الدفع غير موجودة',
+              message_en: 'Payment not found',
+            },
+          ],
+        });
+        return;
+      }
+
+      // Verify the payment belongs to the requesting student
+      if (payment.student_id !== req.user.id) {
+        res.status(403).json({
+          success: false,
+          errors: [
+            {
+              code: 'FORBIDDEN',
+              message_ar: 'لا يمكنك الوصول لهذا الإيصال',
+              message_en: 'You do not have access to this receipt',
+            },
+          ],
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          payment_id: payment.id,
+          receipt_number: `RCP-${payment.id.slice(-8).toUpperCase()}`,
+          student_name_ar: req.user.name_ar,
+          student_name_en: req.user.name_en,
+          student_id: req.user.id,
+          university_id: req.user.university_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          method: payment.method,
+          status: payment.status,
+          tap_reference: payment.tap_reference,
+          payment_date: payment.updated_at || payment.created_at,
+          created_at: payment.created_at,
+          pdf_url: `/api/v1/payments/${payment.id}/receipt.pdf`,
+          note_ar: 'هذا الإيصال صادر إلكترونيًا ولا يحتاج إلى توقيع',
+          note_en: 'This receipt is electronically generated and does not require a signature',
+        },
+        meta: {
+          synced_at: new Date().toISOString(),
+        },
+      });
+    } catch (err: any) {
+      console.error('[Payment Receipt] Error:', err);
+      res.status(500).json({
+        success: false,
+        errors: [
           {
-            description_ar: 'رسوم الفصل الدراسي - دفعة جزئية',
-            description_en: 'Semester Tuition Fee - Partial Payment',
-            amount: 12500.0,
+            code: 'INTERNAL_ERROR',
+            message_ar: 'حدث خطأ أثناء جلب الإيصال',
+            message_en: 'An error occurred while fetching the receipt',
           },
         ],
-        total_amount: 12500.0,
-        currency: 'SAR',
-        payment_method_ar: 'بطاقة مدى',
-        payment_method_en: 'Mada Card',
-        payment_date: '2026-02-10T14:30:00Z',
-        tap_reference: 'TAP-abc123',
-        status: 'paid',
-        pdf_url: `/api/v1/payments/${id}/receipt.pdf`,
-        note_ar: 'هذا الإيصال صادر إلكترونيًا ولا يحتاج إلى توقيع',
-        note_en: 'This receipt is electronically generated and does not require a signature',
-      },
-      meta: {
-        synced_at: new Date().toISOString(),
-      },
-    });
+      });
+    }
   };
 }

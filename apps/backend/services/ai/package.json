@@ -9,6 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
     "@masari/shared": "*",
     "@masari/backend-shared": "*"
   },

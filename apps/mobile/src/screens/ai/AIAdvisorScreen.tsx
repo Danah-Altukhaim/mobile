@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, ScrollView, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Text, Card } from '../../components/ui';
+import { useMutation } from '@tanstack/react-query';
+import { Text } from '../../components/ui';
 import { colors } from '../../theme/colors';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { aiApi } from '../../services/api';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 const suggestedPrompts = [
   'ما جدولي بكرة؟',
@@ -12,30 +19,49 @@ const suggestedPrompts = [
   'كيف أرفع معدلي؟',
 ];
 
-const mockMessages = [
-  {
-    role: 'assistant' as const,
-    content: 'مرحباً! أنا مستشارك الأكاديمي الذكي. كيف أقدر أساعدك اليوم؟',
-  },
-];
-
 export function AIAdvisorScreen() {
   const { t } = useTranslation();
-  const [messages, setMessages] = useState(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'assistant', content: 'مرحباً! أنا مستشارك الأكاديمي الذكي. كيف أقدر أساعدك اليوم؟' },
+  ]);
   const [input, setInput] = useState('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const chatMutation = useMutation({
+    mutationFn: (message: string) =>
+      aiApi.sendMessage({
+        message,
+        conversation_id: conversationId || undefined,
+        language: 'ar',
+      }),
+    onSuccess: (response) => {
+      if (response.data) {
+        setConversationId(response.data.conversation_id);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: response.data.message.content },
+        ]);
+      }
+    },
+    onError: () => {
+      // Fallback if backend is unavailable
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'عذراً، لم أتمكن من الاتصال بالخادم. حاول مرة أخرى لاحقاً.',
+        },
+      ]);
+    },
+  });
 
   const sendMessage = (text: string) => {
-    if (!text.trim()) return;
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', content: text },
-      {
-        role: 'assistant',
-        content:
-          'شكراً على سؤالك! هذا نموذج تجريبي. في النسخة الكاملة، سأتمكن من الوصول إلى بياناتك الأكاديمية ومساعدتك بشكل أفضل.',
-      },
-    ]);
+    if (!text.trim() || chatMutation.isPending) return;
+    setMessages((prev) => [...prev, { role: 'user', content: text }]);
     setInput('');
+    chatMutation.mutate(text);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   return (
@@ -43,15 +69,11 @@ export function AIAdvisorScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Header */}
       <View style={styles.header}>
-        <Text variant="h3" color={colors.textInverse}>
-          {t('ai.title')}
-        </Text>
+        <Text variant="h3" color={colors.textInverse}>{t('ai.title')}</Text>
       </View>
 
-      {/* Messages */}
-      <ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
+      <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
         {messages.map((msg, i) => (
           <View
             key={i}
@@ -66,28 +88,24 @@ export function AIAdvisorScreen() {
           </View>
         ))}
 
-        {/* Suggested Prompts */}
+        {chatMutation.isPending && (
+          <View style={[styles.bubble, styles.assistantBubble]}>
+            <Text variant="body" color={colors.textSecondary}>يكتب...</Text>
+          </View>
+        )}
+
         {messages.length <= 1 && (
           <View style={styles.suggestions}>
-            <Text variant="caption" color={colors.textSecondary}>
-              {t('ai.suggestedPrompts')}
-            </Text>
+            <Text variant="caption" color={colors.textSecondary}>{t('ai.suggestedPrompts')}</Text>
             {suggestedPrompts.map((prompt, i) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.suggestionChip}
-                onPress={() => sendMessage(prompt)}
-              >
-                <Text variant="caption" color={colors.primary}>
-                  {prompt}
-                </Text>
+              <TouchableOpacity key={i} style={styles.suggestionChip} onPress={() => sendMessage(prompt)}>
+                <Text variant="caption" color={colors.primary}>{prompt}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
       </ScrollView>
 
-      {/* Input */}
       <View style={styles.inputRow}>
         <TextInput
           style={styles.input}
@@ -97,11 +115,14 @@ export function AIAdvisorScreen() {
           onChangeText={setInput}
           onSubmitEditing={() => sendMessage(input)}
           textAlign="right"
+          editable={!chatMutation.isPending}
         />
-        <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
-          <Text variant="body" color={colors.textInverse}>
-            ➤
-          </Text>
+        <TouchableOpacity
+          style={[styles.sendButton, chatMutation.isPending && styles.sendButtonDisabled]}
+          onPress={() => sendMessage(input)}
+          disabled={chatMutation.isPending}
+        >
+          <Text variant="body" color={colors.textInverse}>➤</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -169,4 +190,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: spacing.sm,
   },
+  sendButtonDisabled: { opacity: 0.5 },
 });

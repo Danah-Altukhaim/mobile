@@ -4,7 +4,11 @@
       "Bash(node -e ':*)",
       "Bash(npm --version)",
       "Bash(npx --version)",
-      "Bash(timeout 5 npx tsx apps/backend/services/auth/src/index.ts)"
+      "Bash(timeout 5 npx tsx apps/backend/services/auth/src/index.ts)",
+      "Bash(npm install:*)",
+      "Bash(timeout 5 npx tsx apps/backend/services/academic/src/index.ts)",
+      "Bash(timeout 5 npx tsx apps/backend/services/ai/src/index.ts)",
+      "Bash(timeout 5 npx tsx apps/backend/gateway/src/index.ts)"
     ]
   }
 }
