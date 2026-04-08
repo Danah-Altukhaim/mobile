@@ -1,0 +1,80 @@
+{
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "search": "بحث",
+    "noData": "لا توجد بيانات",
+    "seeAll": "عرض الكل"
+  },
+  "tabs": {
+    "home": "الرئيسية",
+    "academics": "الأكاديمية",
+    "payments": "المدفوعات",
+    "campus": "الحرم",
+    "profile": "الملف الشخصي"
+  },
+  "home": {
+    "greeting": "مرحباً",
+    "todayClasses": "حصص اليوم",
+    "upcomingDeadlines": "المواعيد القادمة",
+    "balanceDue": "الرصيد المستحق",
+    "aiAdvisor": "المستشار الذكي"
+  },
+  "academics": {
+    "title": "الأكاديمية",
+    "schedule": "الجدول الدراسي",
+    "grades": "الدرجات",
+    "attendance": "الحضور",
+    "assignments": "الواجبات",
+    "calendar": "التقويم الأكاديمي",
+    "degreeAudit": "خطة التخرج",
+    "gpa": "المعدل التراكمي",
+    "credits": "الساعات المعتمدة",
+    "semester": "الفصل الدراسي"
+  },
+  "payments": {
+    "title": "المدفوعات",
+    "balance": "الرصيد المستحق",
+    "payNow": "ادفع الآن",
+    "history": "سجل المدفوعات",
+    "receipt": "الإيصال",
+    "dueDate": "تاريخ الاستحقاق",
+    "paid": "مدفوع",
+    "pending": "قيد الانتظار",
+    "failed": "فشل"
+  },
+  "campus": {
+    "title": "الحرم الجامعي",
+    "events": "الفعاليات",
+    "clubs": "الأندية",
+    "prayerTimes": "أوقات الصلاة",
+    "rsvp": "تسجيل الحضور",
+    "joinClub": "انضم للنادي",
+    "members": "أعضاء"
+  },
+  "ai": {
+    "title": "المستشار الذكي",
+    "placeholder": "اكتب سؤالك هنا...",
+    "suggestedPrompts": "اقتراحات",
+    "escalate": "تحويل لمستشار",
+    "confidence": "مستوى الثقة"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "notifications": "الإشعارات",
+    "language": "اللغة",
+    "logout": "تسجيل الخروج"
+  },
+  "auth": {
+    "welcome": "مرحباً بك في مساري",
+    "subtitle": "رحلتك الأكاديمية تبدأ هنا",
+    "getStarted": "ابدأ الآن",
+    "login": "تسجيل الدخول",
+    "ssoLogin": "تسجيل الدخول عبر الجامعة"
+  }
+}

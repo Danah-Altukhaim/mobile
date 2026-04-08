@@ -1,0 +1,80 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "search": "Search",
+    "noData": "No data available",
+    "seeAll": "See All"
+  },
+  "tabs": {
+    "home": "Home",
+    "academics": "Academics",
+    "payments": "Payments",
+    "campus": "Campus",
+    "profile": "Profile"
+  },
+  "home": {
+    "greeting": "Hello",
+    "todayClasses": "Today's Classes",
+    "upcomingDeadlines": "Upcoming Deadlines",
+    "balanceDue": "Balance Due",
+    "aiAdvisor": "AI Advisor"
+  },
+  "academics": {
+    "title": "Academics",
+    "schedule": "Schedule",
+    "grades": "Grades",
+    "attendance": "Attendance",
+    "assignments": "Assignments",
+    "calendar": "Academic Calendar",
+    "degreeAudit": "Degree Audit",
+    "gpa": "Cumulative GPA",
+    "credits": "Credit Hours",
+    "semester": "Semester"
+  },
+  "payments": {
+    "title": "Payments",
+    "balance": "Balance Due",
+    "payNow": "Pay Now",
+    "history": "Payment History",
+    "receipt": "Receipt",
+    "dueDate": "Due Date",
+    "paid": "Paid",
+    "pending": "Pending",
+    "failed": "Failed"
+  },
+  "campus": {
+    "title": "Campus",
+    "events": "Events",
+    "clubs": "Clubs",
+    "prayerTimes": "Prayer Times",
+    "rsvp": "RSVP",
+    "joinClub": "Join Club",
+    "members": "Members"
+  },
+  "ai": {
+    "title": "AI Advisor",
+    "placeholder": "Type your question here...",
+    "suggestedPrompts": "Suggestions",
+    "escalate": "Talk to Advisor",
+    "confidence": "Confidence Level"
+  },
+  "profile": {
+    "title": "Profile",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "language": "Language",
+    "logout": "Logout"
+  },
+  "auth": {
+    "welcome": "Welcome to Masari",
+    "subtitle": "Your academic journey starts here",
+    "getStarted": "Get Started",
+    "login": "Login",
+    "ssoLogin": "Login with University"
+  }
+}

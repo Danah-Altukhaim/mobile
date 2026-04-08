@@ -1,0 +1,26 @@
+{
+  "name": "masari",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/mobile",
+    "apps/backend/shared",
+    "apps/backend/gateway",
+    "apps/backend/services/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "dev:backend": "turbo run dev --filter='./apps/backend/**'",
+    "dev:mobile": "turbo run dev --filter=@masari/mobile",
+    "db:migrate": "node apps/backend/shared/src/db/migrate.js",
+    "db:seed": "node apps/backend/shared/src/db/seed.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.4.0",
+    "prettier": "^3.2.0"
+  }
+}

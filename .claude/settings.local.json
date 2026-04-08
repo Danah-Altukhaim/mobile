@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ':*)",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(timeout 5 npx tsx apps/backend/services/auth/src/index.ts)"
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+node_modules/
+dist/
+.turbo/
+.expo/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+android/
+ios/
+*.apk
+*.ipa
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+npm-debug.log*
+
+# PRD source (keep .md version)
+masari_prd_v2.docx
