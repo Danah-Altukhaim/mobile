@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Masari",
+    "slug": "masari",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#4D98E2"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.masari.app",
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "ar"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4D98E2"
+      },
+      "package": "com.masari.app",
+      "supportsRTL": true
+    },
+    "extra": {
+      "supportsRTL": true,
+      "forcesRTL": true,
+      "apiBaseUrl": "http://localhost:3000"
+    },
+    "plugins": [
+      "expo-localization",
+      "expo-font",
+      "expo-secure-store"
+    ]
+  }
+}

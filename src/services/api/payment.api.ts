@@ -1,0 +1,19 @@
+import { API_PATHS } from '@masari/shared';
+import type { PaymentInitiateRequest, PaymentInitiateResponse } from '@masari/shared';
+import { apiClient } from './client';
+
+export const paymentApi = {
+  initiatePayment: (data: PaymentInitiateRequest) =>
+    apiClient.post<PaymentInitiateResponse>(API_PATHS.PAYMENT_INITIATE, data),
+
+  getReceipt: (paymentId: string) =>
+    apiClient.get<{ receipt_url: string }>(API_PATHS.PAYMENT_RECEIPT(paymentId)),
+
+  getHistory: () => apiClient.get<any[]>(API_PATHS.PAYMENT_HISTORY),
+
+  getInstallments: () => apiClient.get<any>(API_PATHS.PAYMENT_INSTALLMENTS),
+
+  getFinancialAid: () => apiClient.get<any[]>(API_PATHS.PAYMENT_FINANCIAL_AID),
+
+  getRefunds: () => apiClient.get<any[]>(API_PATHS.PAYMENT_REFUNDS),
+};
