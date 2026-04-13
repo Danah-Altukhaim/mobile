@@ -30,7 +30,7 @@
     "ai": "المستشار",
     "campus": "الجامعة",
     "social": "اجتماعي",
-    "profile": "الملف الشخصي"
+    "profile": "الملف"
   },
   "home": {
     "greeting": "مرحباً",
@@ -128,9 +128,9 @@
     "prayerTimes": "أوقات الصلاة",
     "kuwaitCity": "مدينة الكويت",
     "rsvp": "تسجيل الحضور",
-    "rsvped": "✓ مسجل",
+    "rsvped": "مسجل",
     "joinClub": "انضم للنادي",
-    "joined": "✓ عضو",
+    "joined": "عضو",
     "members": "أعضاء",
     "clubCategory": {
       "technology": "تقنية",
@@ -174,7 +174,14 @@
     "rooms": "الغرف",
     "searchBuilding": "ابحث عن مبنى...",
     "services": "الخدمات",
-    "socialCategory": "اجتماعي"
+    "socialCategory": "اجتماعي",
+    "departments": {
+      "PR": "العلاقات العامة",
+      "CS": "علوم الحاسوب",
+      "Registrar": "التسجيل",
+      "Student Affairs": "شؤون الطلاب",
+      "Financial Aid": "المساعدات المالية"
+    }
   },
   "ai": {
     "title": "المستشار الذكي",
@@ -216,7 +223,7 @@
     "feed": "المنشورات",
     "messages": "الرسائل",
     "studyGroups": "مجموعات الدراسة",
-    "peerMentoring": "التوجيه الأقران",
+    "peerMentoring": "توجيه الأقران",
     "anonymousQA": "أسئلة مجهولة",
     "unread": "غير مقروء",
     "newPost": "منشور جديد",
@@ -228,11 +235,18 @@
     "typeMessage": "اكتب رسالة...",
     "memberCount": "{{count}} أعضاء",
     "joinGroup": "انضم للمجموعة",
-    "joined": "✓ عضو",
+    "joined": "عضو",
     "year": "سنة",
+    "gpa": "المعدل",
     "requestMatch": "طلب توجيه",
     "askQuestion": "اطرح سؤال",
-    "upvotes": "تصويت"
+    "upvotes": "تصويت",
+    "topics": {
+      "programming": "برمجة",
+      "algorithms": "خوارزميات",
+      "circuits": "دوائر كهربائية",
+      "math": "رياضيات"
+    }
   },
   "auth": {
     "welcome": "هلا فيك في مساري",

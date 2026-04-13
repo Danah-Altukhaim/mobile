@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
-import { Text } from '../ui/Text';
+import { Icon } from '../ui/Icon';
 import { colors } from '../../theme/colors';
 import { useUIStore } from '../../store/ui.store';
 import { useDirection } from '../../hooks/useDirection';
@@ -15,9 +15,7 @@ export function AIAdvisorFAB() {
       onPress={toggleAIAdvisor}
       activeOpacity={0.85}
     >
-      <Text variant="h3" color={colors.textInverse}>
-        🤖
-      </Text>
+      <Icon name="ai" size={26} color={colors.textInverse} />
       <View style={[styles.statusDot, isRTL ? { left: 2 } : { right: 2 }]} />
     </TouchableOpacity>
   );

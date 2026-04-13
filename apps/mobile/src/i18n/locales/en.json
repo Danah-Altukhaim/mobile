@@ -174,7 +174,14 @@
     "rooms": "Rooms",
     "searchBuilding": "Search buildings...",
     "services": "Services",
-    "socialCategory": "Social"
+    "socialCategory": "Social",
+    "departments": {
+      "PR": "PR",
+      "CS": "CS",
+      "Registrar": "Registrar",
+      "Student Affairs": "Student Affairs",
+      "Financial Aid": "Financial Aid"
+    }
   },
   "ai": {
     "title": "AI Advisor",
@@ -230,9 +237,16 @@
     "joinGroup": "Join Group",
     "joined": "Joined",
     "year": "Year",
+    "gpa": "GPA",
     "requestMatch": "Request Match",
     "askQuestion": "Ask Question",
-    "upvotes": "upvotes"
+    "upvotes": "upvotes",
+    "topics": {
+      "programming": "Programming",
+      "algorithms": "Algorithms",
+      "circuits": "Circuits",
+      "math": "Math"
+    }
   },
   "auth": {
     "welcome": "Hey, welcome to Masari!",

@@ -43,13 +43,13 @@ export function PeerMentoringScreen() {
               <Text variant="caption" color={colors.textSecondary} style={{ textAlign, writingDirection }}>
                 {l(item, 'major')} {'\u2022'} {t('social.year')} {item.year}
               </Text>
-              <Text variant="caption" color={colors.primary} style={{ textAlign, writingDirection }}>GPA: {item.gpa}</Text>
+              <Text variant="caption" color={colors.primary} style={{ textAlign, writingDirection }}>{t('social.gpa')}: {item.gpa}</Text>
             </View>
           </View>
           <Text variant="body" color={colors.textSecondary} style={[styles.bio, { textAlign, writingDirection }]}>{l(item, 'bio')}</Text>
           <View style={[styles.topics, { flexDirection: rowDirection }]}>
             {item.topics?.map((topic: string, i: number) => (
-              <Badge key={i} label={topic} variant="info" />
+              <Badge key={i} label={t(`social.topics.${topic}`, topic)} variant="info" />
             ))}
           </View>
           <Button title={t('social.requestMatch')} onPress={() => {}} variant="outline" style={styles.button} />

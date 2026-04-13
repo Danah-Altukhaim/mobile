@@ -1,9 +1,9 @@
 import React from 'react';
-import { ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Text, Card, Button, ScreenSkeleton } from '../../components/ui';
+import { Text, Card, Button, ScreenSkeleton, Icon } from '../../components/ui';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { campusApi } from '../../services/api';
@@ -14,7 +14,8 @@ export function EventsScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
-  const { textAlign, writingDirection } = useDirection();
+  const { isRTL, textAlign, writingDirection } = useDirection();
+  const rowDirection = isRTL ? 'row-reverse' : 'row';
 
   const { data, isLoading } = useQuery({
     queryKey: ['events'],
@@ -45,12 +46,18 @@ export function EventsScreen() {
               {localized(event, 'description')}
             </Text>
           )}
-          <Text variant="caption" style={styles.detail}>
-            📅 {new Date(event.start_time).toLocaleDateString(currentLocale(), {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-            })}
-          </Text>
-          <Text variant="caption">📍 {event.location}</Text>
+          <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+            <Icon name="calendar" size={14} color={colors.primary} />
+            <Text variant="caption" style={{ textAlign, writingDirection }}>
+              {new Date(event.start_time).toLocaleDateString(currentLocale(), {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+              })}
+            </Text>
+          </View>
+          <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+            <Icon name="location" size={14} color={colors.primary} />
+            <Text variant="caption" style={{ textAlign, writingDirection }}>{event.location}</Text>
+          </View>
           {event.capacity && (
             <Text variant="caption" color={colors.primary}>
               {event.rsvp_count}/{event.capacity} {t('common.registered')}
@@ -81,7 +88,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.base },
   title: { marginBottom: spacing.base },
   card: { marginBottom: spacing.base },
-  detail: { marginTop: spacing.sm },
+  metaRow: { alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
   rsvpButton: { marginTop: spacing.sm },
   empty: { textAlign: 'center', marginTop: spacing.xl },
 });

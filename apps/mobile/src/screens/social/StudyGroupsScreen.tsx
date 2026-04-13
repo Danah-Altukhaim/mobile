@@ -2,7 +2,7 @@ import React from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Text, Card, Badge, Button, ScreenSkeleton } from '../../components/ui';
+import { Text, Card, Badge, Button, ScreenSkeleton, Icon } from '../../components/ui';
 import { useColors } from '../../theme/useColors';
 import { spacing } from '../../theme/spacing';
 import { useLocalizedField } from '../../hooks/useLocale';
@@ -48,10 +48,18 @@ export function StudyGroupsScreen() {
             <View style={styles.info}>
               <Text variant="bodyBold" style={{ textAlign, writingDirection }}>{l(item, 'name')}</Text>
               <Badge label={item.course_code} variant="info" />
-              <Text variant="caption" color={colors.textSecondary} style={{ textAlign, writingDirection }}>
-                {'\u{1F465}'} {t('social.memberCount', { count: item.member_count })}
-              </Text>
-              <Text variant="caption" color={colors.textSecondary} style={{ textAlign, writingDirection }}>{'\u{1F4CD}'} {item.location}</Text>
+              <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+                <Icon name="people" size={14} color={colors.primary} />
+                <Text variant="caption" color={colors.textSecondary} style={{ textAlign, writingDirection }}>
+                  {t('social.memberCount', { count: item.member_count })}
+                </Text>
+              </View>
+              <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
+                <Icon name="location" size={14} color={colors.primary} />
+                <Text variant="caption" color={colors.textSecondary} style={{ textAlign, writingDirection }}>
+                  {item.location}
+                </Text>
+              </View>
             </View>
           </View>
           <Button
@@ -75,6 +83,7 @@ const styles = StyleSheet.create({
   card: { marginBottom: spacing.md },
   row: { justifyContent: 'space-between' },
   info: { flex: 1, gap: spacing.xs },
+  metaRow: { alignItems: 'center', gap: spacing.xs },
   button: { marginTop: spacing.sm },
   empty: { textAlign: 'center', marginTop: spacing.xl },
 });

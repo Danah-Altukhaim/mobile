@@ -256,9 +256,9 @@ export const mockResponses: Record<string, any> = {
   '/api/v1/feed': {
     success: true,
     data: [
-      { id: 'post_001', author: { id: 'user_201', name_ar: 'فاطمة الزهراني', name_en: 'Fatimah Al-Zahrani' }, content_ar: 'هل أحد حضر محاضرة الذكاء الاصطناعي اليوم؟ كانت رائعة! 🧠', content_en: 'Did anyone attend the AI lecture today? Amazing! 🧠', type: 'text', likes_count: 24, comments_count: 7, created_at: '2026-04-08T09:30:00Z' },
-      { id: 'post_002', author: { id: 'user_302', name_ar: 'عبدالله القحطاني', name_en: 'Abdullah Al-Qahtani' }, content_ar: 'تذكير: آخر موعد لتسليم مشروع هندسة البرمجيات يوم الخميس 📝', content_en: 'Reminder: Software Engineering project deadline is Thursday 📝', type: 'text', likes_count: 15, comments_count: 12, created_at: '2026-04-08T08:15:00Z' },
-      { id: 'post_003', author: { id: 'club_cs', name_ar: 'نادي علوم الحاسب', name_en: 'CS Club' }, content_ar: 'يسرنا دعوتكم لحضور هاكاثون الابتكار يوم السبت القادم 🏆', content_en: 'Join us for the Innovation Hackathon next Saturday 🏆', type: 'event', likes_count: 52, comments_count: 18, created_at: '2026-04-07T16:00:00Z' },
+      { id: 'post_001', author: { id: 'user_201', name_ar: 'فاطمة الزهراني', name_en: 'Fatimah Al-Zahrani' }, content_ar: 'هل أحد حضر محاضرة الذكاء الاصطناعي اليوم؟ كانت رائعة!', content_en: 'Did anyone attend the AI lecture today? Amazing!', type: 'text', likes_count: 24, comments_count: 7, created_at: '2026-04-08T09:30:00Z' },
+      { id: 'post_002', author: { id: 'user_302', name_ar: 'عبدالله القحطاني', name_en: 'Abdullah Al-Qahtani' }, content_ar: 'تذكير: آخر موعد لتسليم مشروع هندسة البرمجيات يوم الخميس', content_en: 'Reminder: Software Engineering project deadline is Thursday', type: 'text', likes_count: 15, comments_count: 12, created_at: '2026-04-08T08:15:00Z' },
+      { id: 'post_003', author: { id: 'club_cs', name_ar: 'نادي علوم الحاسب', name_en: 'CS Club' }, content_ar: 'يسرنا دعوتكم لحضور هاكاثون الابتكار يوم السبت القادم', content_en: 'Join us for the Innovation Hackathon next Saturday', type: 'event', likes_count: 52, comments_count: 18, created_at: '2026-04-07T16:00:00Z' },
     ],
   },
 

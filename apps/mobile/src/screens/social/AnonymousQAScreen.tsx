@@ -2,7 +2,7 @@ import React from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Text, Card, Button, ScreenSkeleton } from '../../components/ui';
+import { Text, Card, Button, ScreenSkeleton, Icon } from '../../components/ui';
 import { useColors } from '../../theme/useColors';
 import { spacing } from '../../theme/spacing';
 import { useUIStore } from '../../store/ui.store';
@@ -31,9 +31,13 @@ export function AnonymousQAScreen() {
       data={questions}
       keyExtractor={(item: any) => item.id}
       ListHeaderComponent={
-        <View style={[styles.header, { flexDirection: rowDirection }]}>
-          <Text variant="h2" style={{ textAlign, writingDirection }}>{t('social.anonymousQA')}</Text>
-          <Button title={t('social.askQuestion')} onPress={() => {}} variant="outline" />
+        <View style={styles.header}>
+          <Text variant="h2" style={[styles.headerTitle, { textAlign, writingDirection }]}>
+            {t('social.anonymousQA')}
+          </Text>
+          <View style={[styles.headerAction, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+            <Button title={t('social.askQuestion')} onPress={() => {}} variant="outline" />
+          </View>
         </View>
       }
       ListEmptyComponent={
@@ -48,7 +52,10 @@ export function AnonymousQAScreen() {
             {locale === 'ar' ? item.answer_ar : item.answer_en}
           </Text>
           <View style={[styles.footer, { flexDirection: rowDirection }]}>
-            <Text variant="caption" color={colors.primary}>{'\u{1F44D}'} {item.upvotes} {t('social.upvotes')}</Text>
+            <View style={[styles.upvotes, { flexDirection: rowDirection }]}>
+              <Icon name="thumbs-up" size={14} color={colors.primary} />
+              <Text variant="caption" color={colors.primary}>{item.upvotes} {t('social.upvotes')}</Text>
+            </View>
             <Text variant="caption" color={colors.textTertiary}>{item.created_at}</Text>
           </View>
         </Card>
@@ -60,9 +67,12 @@ export function AnonymousQAScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: spacing.base, paddingBottom: 100 },
-  header: { justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.base },
+  header: { marginBottom: spacing.base },
+  headerTitle: { marginBottom: spacing.sm },
+  headerAction: {},
   card: { marginBottom: spacing.md },
   answer: { marginTop: spacing.sm },
-  footer: { justifyContent: 'space-between', marginTop: spacing.sm },
+  footer: { justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  upvotes: { alignItems: 'center', gap: spacing.xs },
   empty: { textAlign: 'center', marginTop: spacing.xl },
 });

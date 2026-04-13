@@ -44,7 +44,7 @@ export function NewsFeedScreen() {
         return (
           <Card elevation="sm" style={styles.card}>
             <View style={[styles.header, { flexDirection: rowDirection }]}>
-              <Badge label={item.department} variant="info" />
+              <Badge label={t(`campus.departments.${item.department}`, { defaultValue: item.department })} variant="info" />
               <Text variant="caption" color={colors.textTertiary}>{dateStr}</Text>
             </View>
             <Text variant="bodyBold" style={[styles.newsTitle, { textAlign, writingDirection }]}>{l(item, 'title')}</Text>

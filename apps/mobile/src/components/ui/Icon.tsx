@@ -9,7 +9,7 @@ export type IconName =
   | 'payment-history' | 'installment' | 'financial-aid' | 'refund'
   | 'settings' | 'notifications' | 'language' | 'logout' | 'payments'
   | 'social' | 'home' | 'academics' | 'campus' | 'profile'
-  | 'send' | 'warning' | 'heart' | 'comment' | 'check' | 'close'
+  | 'send' | 'warning' | 'heart' | 'comment' | 'check' | 'close' | 'people' | 'thumbs-up'
   | 'arrow-back' | 'arrow-forward'
   | 'location' | 'time' | 'document' | 'bank' | 'card' | 'apple'
   | 'sunrise' | 'sunny' | 'partly-sunny' | 'cloudy' | 'sunset' | 'moon'
@@ -81,6 +81,8 @@ const iconMap: Record<IconName, { family: 'ion' | 'mci' | 'mi'; icon: string }> 
   'comment': { family: 'ion', icon: 'chatbubble' },
   'check': { family: 'ion', icon: 'checkmark' },
   'close': { family: 'ion', icon: 'close' },
+  'people': { family: 'ion', icon: 'people' },
+  'thumbs-up': { family: 'ion', icon: 'thumbs-up' },
   'arrow-back': { family: 'ion', icon: 'arrow-back' },
   'arrow-forward': { family: 'ion', icon: 'arrow-forward' },
 

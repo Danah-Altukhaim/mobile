@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, ScrollView, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
-import { Text } from '../../components/ui';
+import { Text, Icon } from '../../components/ui';
 import { colors } from '../../theme/colors';
 import { spacing, borderRadius } from '../../theme/spacing';
 import { aiApi } from '../../services/api';
@@ -175,7 +175,9 @@ export function AIAdvisorScreen() {
           onPress={() => sendMessage(input)}
           disabled={chatMutation.isPending}
         >
-          <Text variant="body" color={colors.textInverse}>➤</Text>
+          <View style={isRTL ? styles.sendIconRTL : undefined}>
+            <Icon name="send" size={18} color={colors.textInverse} />
+          </View>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -242,4 +244,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: { opacity: 0.5 },
+  sendIconRTL: { transform: [{ scaleX: -1 }] },
 });
