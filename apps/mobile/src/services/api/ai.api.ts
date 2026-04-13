@@ -8,4 +8,7 @@ export const aiApi = {
 
   getConversation: (conversationId: string) =>
     apiClient.get<AIConversation>(API_PATHS.AI_CHAT_HISTORY(conversationId)),
+
+  getCourseRecommendations: () =>
+    apiClient.get<any[]>(API_PATHS.AI_COURSE_RECOMMENDATIONS),
 };

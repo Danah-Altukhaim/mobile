@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import type { AuthRequest } from '@masari/backend-shared';
-import { paymentQueries } from '@masari/backend-shared';
+import { paymentQueries, mockData } from '@masari/backend-shared';
 
 const TAP_SECRET_KEY = process.env.TAP_SECRET_KEY || 'tap_test_secret';
 
@@ -36,7 +36,7 @@ export class PaymentController {
         studentId: req.user.id,
         termId: req.body.term_id || 'current',
         amount,
-        currency: req.body.currency || 'SAR',
+        currency: req.body.currency || 'KWD',
         method: method || 'card',
         feeIds: fee_ids,
         idempotencyKey,
@@ -224,5 +224,25 @@ export class PaymentController {
         ],
       });
     }
+  };
+
+  /** GET /api/v1/payments/history */
+  getHistory = async (_req: AuthRequest, res: Response): Promise<void> => {
+    res.json({ success: true, data: mockData.mockPaymentHistory, meta: { source: 'mock' } });
+  };
+
+  /** GET /api/v1/payments/installments */
+  getInstallments = async (_req: AuthRequest, res: Response): Promise<void> => {
+    res.json({ success: true, data: mockData.mockInstallmentPlan, meta: { source: 'mock' } });
+  };
+
+  /** GET /api/v1/payments/financial-aid */
+  getFinancialAid = async (_req: AuthRequest, res: Response): Promise<void> => {
+    res.json({ success: true, data: mockData.mockFinancialAid, meta: { source: 'mock' } });
+  };
+
+  /** GET /api/v1/payments/refunds */
+  getRefunds = async (_req: AuthRequest, res: Response): Promise<void> => {
+    res.json({ success: true, data: mockData.mockRefunds, meta: { source: 'mock' } });
   };
 }

@@ -11,6 +11,11 @@ export function registerRoutes(app: Express): void {
   app.post('/api/v1/admin/students/:id/intervene', authenticate, controller.intervene);
   app.post('/api/v1/admin/communications/send', authenticate, controller.sendCommunication);
   app.put('/api/v1/admin/config/branding', authenticate, controller.updateBranding);
+  app.get('/api/v1/admin/users', authenticate, controller.listAdminUsers);
+  app.post('/api/v1/admin/users', authenticate, controller.createAdminUser);
+  app.put('/api/v1/admin/users/:id/role', authenticate, controller.updateAdminRole);
+  app.post('/api/v1/admin/students/import', authenticate, controller.importStudents);
+  app.get('/api/v1/admin/students/export', authenticate, controller.exportStudents);
   app.get('/api/v1/admin/integrations/status', authenticate, controller.getIntegrationStatus);
   app.post('/api/v1/admin/integrations/sync', authenticate, controller.triggerSync);
 }

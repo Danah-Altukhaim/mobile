@@ -28,4 +28,11 @@ export const academicApi = {
   getFees: () => apiClient.get<PaymentDashboard>(API_PATHS.STUDENT_FEES),
 
   getDegreeAudit: () => apiClient.get<DegreeAudit>(API_PATHS.STUDENT_DEGREE_AUDIT),
+
+  getCalendar: () => apiClient.get<any[]>(API_PATHS.STUDENT_CALENDAR),
+
+  getAvailableCourses: () => apiClient.get<any[]>(API_PATHS.STUDENT_AVAILABLE_COURSES),
+
+  registerCourse: (courseId: string) =>
+    apiClient.post<any>(API_PATHS.STUDENT_REGISTER_COURSE(courseId)),
 };

@@ -22,14 +22,14 @@ export type AcademicsStackParamList = {
   Assignments: undefined;
   Calendar: undefined;
   DegreeAudit: undefined;
+  CourseRegistration: undefined;
+  CourseRecommendations: undefined;
+  TranscriptRequest: undefined;
 };
 
-// Payments Stack
-export type PaymentsStackParamList = {
-  PaymentDashboard: undefined;
-  PaymentMethod: { amount: number; feeIds: string[] };
-  PaymentConfirmation: { paymentId: string };
-  PaymentHistory: undefined;
+// AI Stack
+export type AIStackParamList = {
+  AIChat: undefined;
 };
 
 // Campus Stack
@@ -40,6 +40,21 @@ export type CampusStackParamList = {
   Clubs: undefined;
   ClubDetail: { clubId: string };
   PrayerTimes: undefined;
+  CampusMap: undefined;
+  DiningServices: undefined;
+  LostAndFound: undefined;
+  NewsFeed: undefined;
+};
+
+// Social Stack
+export type SocialStackParamList = {
+  SocialHub: undefined;
+  SocialFeed: undefined;
+  StudyGroups: undefined;
+  DirectMessages: undefined;
+  Conversation: { conversationId: string };
+  PeerMentoring: undefined;
+  AnonymousQA: undefined;
 };
 
 // Profile Stack
@@ -47,14 +62,22 @@ export type ProfileStackParamList = {
   ProfileScreen: undefined;
   Settings: undefined;
   NotificationPreferences: undefined;
+  PaymentDashboard: undefined;
+  PaymentMethod: { amount: number; feeIds: string[] };
+  PaymentConfirmation: { paymentId: string };
+  PaymentHistory: undefined;
+  FinancialAid: undefined;
+  InstallmentPlans: undefined;
+  RefundTracking: undefined;
 };
 
 // Main Tabs
 export type MainTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList>;
   AcademicsTab: NavigatorScreenParams<AcademicsStackParamList>;
-  PaymentsTab: NavigatorScreenParams<PaymentsStackParamList>;
+  AITab: NavigatorScreenParams<AIStackParamList>;
   CampusTab: NavigatorScreenParams<CampusStackParamList>;
+  SocialTab: NavigatorScreenParams<SocialStackParamList>;
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 

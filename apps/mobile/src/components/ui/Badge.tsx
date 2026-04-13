@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from './Text';
-import { colors } from '../../theme/colors';
 import { spacing, borderRadius } from '../../theme/spacing';
 
 interface BadgeProps {
@@ -9,12 +8,13 @@ interface BadgeProps {
   variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral';
 }
 
+// CCK badge palette — see CCK_BRAND.md §Badges
 const variantColors = {
-  success: { bg: '#E8F5E9', text: colors.success },
-  warning: { bg: '#FFF3E0', text: colors.warning },
-  error: { bg: '#FFEBEE', text: colors.error },
-  info: { bg: '#E3F2FD', text: colors.info },
-  neutral: { bg: colors.surfaceVariant, text: colors.textSecondary },
+  success: { bg: '#E6F2E2', text: '#004D32' },
+  warning: { bg: '#FFF1E0', text: '#FF8F3C' },
+  error:   { bg: '#E20613', text: '#FFFFFF' },
+  info:    { bg: '#E6F2F9', text: '#1BA2DB' },
+  neutral: { bg: '#EEEEEE', text: '#737477' },
 };
 
 export function Badge({ label, variant = 'neutral' }: BadgeProps) {
@@ -22,7 +22,7 @@ export function Badge({ label, variant = 'neutral' }: BadgeProps) {
 
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
-      <Text variant="small" color={text}>
+      <Text variant="caption" color={text}>
         {label}
       </Text>
     </View>
@@ -32,8 +32,7 @@ export function Badge({ label, variant = 'neutral' }: BadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    alignSelf: 'flex-start',
+    paddingVertical: 3,
+    borderRadius: borderRadius.sm,
   },
 });

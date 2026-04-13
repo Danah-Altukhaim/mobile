@@ -64,3 +64,23 @@ export interface IntegrationStatus {
 }
 
 export type AdminRole = 'super_admin' | 'university_admin' | 'advisor' | 'staff';
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name_ar: string;
+  name_en: string;
+  role: AdminRole;
+  status: 'active' | 'inactive';
+  created_at: string;
+  last_login: string | null;
+}
+
+export interface StudentImportResult {
+  import_id: string;
+  total_records: number;
+  successful: number;
+  failed: number;
+  errors: { row: number; message_ar: string; message_en: string }[];
+  status: 'completed' | 'partial' | 'failed';
+}

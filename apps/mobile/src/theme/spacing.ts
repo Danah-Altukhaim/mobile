@@ -10,11 +10,13 @@ export const spacing = {
   '4xl': 48,
 } as const;
 
+// CCK radius — tight 3px across all interactive elements.
+// No pill buttons, no large rounded cards. `full` reserved for avatars.
 export const borderRadius = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
+  sm: 3,
+  md: 3,
+  lg: 4,
+  xl: 6,
   full: 9999,
 } as const;
 

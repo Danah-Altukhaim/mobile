@@ -12,4 +12,14 @@ export const campusApi = {
 
   joinClub: (clubId: string) =>
     apiClient.post<{ member_count: number }>(API_PATHS.CLUB_JOIN(clubId)),
+
+  getPrayerTimes: () => apiClient.get<any>(API_PATHS.PRAYER_TIMES),
+
+  getBuildings: () => apiClient.get<any[]>(API_PATHS.CAMPUS_BUILDINGS),
+
+  getNews: () => apiClient.get<any[]>(API_PATHS.CAMPUS_NEWS),
+
+  getDining: () => apiClient.get<any[]>(API_PATHS.CAMPUS_DINING),
+
+  getLostFound: () => apiClient.get<any[]>(API_PATHS.CAMPUS_LOST_FOUND),
 };

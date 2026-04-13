@@ -29,6 +29,7 @@ const serviceRoutes: Array<{ path: string; target: string; name: string }> = [
   { path: '/api/v1/ai', target: `http://localhost:${process.env.AI_SERVICE_PORT || 3004}`, name: 'ai' },
   { path: '/api/v1/events', target: `http://localhost:${process.env.CAMPUS_SERVICE_PORT || 3005}`, name: 'campus' },
   { path: '/api/v1/clubs', target: `http://localhost:${process.env.CAMPUS_SERVICE_PORT || 3005}`, name: 'campus' },
+  { path: '/api/v1/campus', target: `http://localhost:${process.env.CAMPUS_SERVICE_PORT || 3005}`, name: 'campus' },
   { path: '/api/v1/feed', target: `http://localhost:${process.env.SOCIAL_SERVICE_PORT || 3006}`, name: 'social' },
   { path: '/api/v1/messages', target: `http://localhost:${process.env.SOCIAL_SERVICE_PORT || 3006}`, name: 'social' },
   { path: '/api/v1/notifications', target: `http://localhost:${process.env.NOTIFICATION_SERVICE_PORT || 3007}`, name: 'notification' },
@@ -37,14 +38,18 @@ const serviceRoutes: Array<{ path: string; target: string; name: string }> = [
   { path: '/api/v1/files', target: `http://localhost:${process.env.FILE_SERVICE_PORT || 3010}`, name: 'file' },
 ];
 
-// Register proxy routes
+// Register proxy routes — use router() to preserve full path when proxying
 for (const route of serviceRoutes) {
-  const proxyOptions: Options = {
+  app.use(route.path, createProxyMiddleware({
     target: route.target,
     changeOrigin: true,
+    pathRewrite: {},  // empty = don't rewrite, keep full path
     on: {
       proxyReq: (_proxyReq, req) => {
-        console.log(`[Gateway] ${req.method} ${req.url} -> ${route.name} (${route.target})`);
+        // Reconstruct full path since express strips the mount point
+        const fullPath = route.path + (req.url === '/' ? '' : req.url);
+        _proxyReq.path = fullPath;
+        console.log(`[Gateway] ${req.method} ${fullPath} -> ${route.name}`);
       },
       error: (err, _req, res) => {
         console.error(`[Gateway] Proxy error for ${route.name}:`, err.message);
@@ -52,20 +57,12 @@ for (const route of serviceRoutes) {
           (res as any).writeHead(502, { 'Content-Type': 'application/json' });
           (res as any).end(JSON.stringify({
             success: false,
-            errors: [
-              {
-                code: 'SERVICE_UNAVAILABLE',
-                message_ar: `خدمة ${route.name} غير متاحة حالياً`,
-                message_en: `${route.name} service is currently unavailable`,
-              },
-            ],
+            errors: [{ code: 'SERVICE_UNAVAILABLE', message_ar: `خدمة ${route.name} غير متاحة`, message_en: `${route.name} service unavailable` }],
           }));
         }
       },
     },
-  };
-
-  app.use(route.path, createProxyMiddleware(proxyOptions));
+  }));
 }
 
 // Catch-all for unmatched routes

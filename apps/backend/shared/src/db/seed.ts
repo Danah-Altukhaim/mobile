@@ -115,7 +115,7 @@ async function seed() {
       '202401001',
       'نورة الصباح',
       'Noura Al-Sabah',
-      'noura@gust.edu.kw',
+      'noura@cck.edu.kw',
       '+96599001234',
       'علوم الحاسب',
       'Computer Science',
@@ -209,17 +209,17 @@ async function seed() {
 
   // Events
   const events = [
-    { title_ar: 'ورشة عمل: مقدمة في الذكاء الاصطناعي', title_en: 'Workshop: Intro to AI', start: '2026-04-12T14:00:00Z', end: '2026-04-12T16:00:00Z', location: 'قاعة المؤتمرات الرئيسية', category: 'workshop', capacity: 80 },
-    { title_ar: 'معرض المشاريع الطلابية', title_en: 'Student Projects Exhibition', start: '2026-04-15T10:00:00Z', end: '2026-04-15T15:00:00Z', location: 'ساحة الجامعة', category: 'exhibition', capacity: 200 },
-    { title_ar: 'محاضرة: ريادة الأعمال في الكويت', title_en: 'Lecture: Entrepreneurship in Kuwait', start: '2026-04-18T18:00:00Z', end: '2026-04-18T20:00:00Z', location: 'القاعة الكبرى', category: 'lecture', capacity: 150 },
+    { title_ar: 'ورشة عمل: مقدمة في الذكاء الاصطناعي', title_en: 'Workshop: Intro to AI', start: '2026-04-12T14:00:00Z', end: '2026-04-12T16:00:00Z', location_ar: 'قاعة المؤتمرات الرئيسية', location_en: 'Main Conference Hall', category: 'workshop', capacity: 80 },
+    { title_ar: 'معرض المشاريع الطلابية', title_en: 'Student Projects Exhibition', start: '2026-04-15T10:00:00Z', end: '2026-04-15T15:00:00Z', location_ar: 'ساحة الجامعة', location_en: 'University Plaza', category: 'exhibition', capacity: 200 },
+    { title_ar: 'محاضرة: ريادة الأعمال في الكويت', title_en: 'Lecture: Entrepreneurship in Kuwait', start: '2026-04-18T18:00:00Z', end: '2026-04-18T20:00:00Z', location_ar: 'القاعة الكبرى', location_en: 'Grand Hall', category: 'lecture', capacity: 150 },
   ];
 
   for (const e of events) {
     await query(
-      `INSERT INTO events (university_id, title_ar, title_en, start_time, end_time, location, organizer_type, category, capacity)
-       VALUES ($1, $2, $3, $4, $5, $6, 'university', $7, $8)
+      `INSERT INTO events (university_id, title_ar, title_en, start_time, end_time, location_ar, location_en, organizer_type, category, capacity)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'university', $8, $9)
        ON CONFLICT DO NOTHING`,
-      [universityId, e.title_ar, e.title_en, e.start, e.end, e.location, e.category, e.capacity],
+      [universityId, e.title_ar, e.title_en, e.start, e.end, e.location_ar, e.location_en, e.category, e.capacity],
     );
   }
   console.log('✅ 3 events created');
@@ -246,12 +246,12 @@ async function seed() {
     `INSERT INTO admin_users (university_id, email, name_ar, name_en, role)
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (university_id, email) DO NOTHING`,
-    [universityId, 'admin@gust.edu.kw', 'د. فهد العتيبي', 'Dr. Fahad Al-Otaibi', 'university_admin'],
+    [universityId, 'admin@cck.edu.kw', 'د. فهد العتيبي', 'Dr. Fahad Al-Otaibi', 'university_admin'],
   );
   console.log('✅ Admin user created');
 
   console.log('\n🎉 Seed complete! Database ready for development.\n');
-  console.log('Student login: noura@gust.edu.kw');
+  console.log('Student login: noura@cck.edu.kw');
   console.log('University: GUST (gust)');
 
   await pool.end();

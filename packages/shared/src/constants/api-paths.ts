@@ -15,23 +15,58 @@ export const API_PATHS = {
   STUDENT_FEES: `${V1}/students/me/fees`,
   STUDENT_DEGREE_AUDIT: `${V1}/students/me/degree-audit`,
 
+  STUDENT_REGISTER_COURSE: (courseId: string) => `${V1}/students/me/register-course/${courseId}`,
+  STUDENT_CALENDAR: `${V1}/students/me/calendar`,
+  STUDENT_AVAILABLE_COURSES: `${V1}/students/me/available-courses`,
+
   // Payments
   PAYMENT_INITIATE: `${V1}/payments/initiate`,
   PAYMENT_WEBHOOK: `${V1}/payments/webhook`,
   PAYMENT_RECEIPT: (paymentId: string) => `${V1}/payments/${paymentId}/receipt`,
+  PAYMENT_HISTORY: `${V1}/payments/history`,
+  PAYMENT_INSTALLMENTS: `${V1}/payments/installments`,
+  PAYMENT_FINANCIAL_AID: `${V1}/payments/financial-aid`,
+  PAYMENT_REFUNDS: `${V1}/payments/refunds`,
 
   // AI
   AI_CHAT: `${V1}/ai/chat`,
   AI_CHAT_HISTORY: (conversationId: string) => `${V1}/ai/chat/${conversationId}`,
+  AI_ESCALATE: `${V1}/ai/escalate`,
+  AI_COURSE_RECOMMENDATIONS: `${V1}/ai/course-recommendations`,
+  AI_NUDGES: `${V1}/ai/nudges`,
 
   // Campus
   EVENTS: `${V1}/events`,
+  EVENT_DETAIL: (eventId: string) => `${V1}/events/${eventId}`,
   EVENT_RSVP: (eventId: string) => `${V1}/events/${eventId}/rsvp`,
+  PRAYER_TIMES: `${V1}/events/prayer-times`,
   CLUBS: `${V1}/clubs`,
+  CLUB_DETAIL: (clubId: string) => `${V1}/clubs/${clubId}`,
   CLUB_JOIN: (clubId: string) => `${V1}/clubs/${clubId}/join`,
+  CAMPUS_BUILDINGS: `${V1}/campus/buildings`,
+  CAMPUS_NEWS: `${V1}/campus/news`,
+  CAMPUS_DINING: `${V1}/campus/dining`,
+  CAMPUS_LOST_FOUND: `${V1}/campus/lost-found`,
+
+  // Social
+  SOCIAL_FEED: `${V1}/feed`,
+  SOCIAL_CREATE_POST: `${V1}/feed`,
+  SOCIAL_MESSAGES: `${V1}/messages`,
+  SOCIAL_CONVERSATION: (conversationId: string) => `${V1}/messages/${conversationId}`,
+  SOCIAL_SEND_MESSAGE: (userId: string) => `${V1}/messages/${userId}`,
+  SOCIAL_STUDY_GROUPS: `${V1}/feed/study-groups`,
+  SOCIAL_JOIN_STUDY_GROUP: (groupId: string) => `${V1}/feed/study-groups/${groupId}/join`,
+  SOCIAL_MENTORING: `${V1}/feed/mentoring`,
+  SOCIAL_ANONYMOUS_QA: `${V1}/feed/anonymous-qa`,
 
   // Notifications
+  NOTIFICATIONS: `${V1}/notifications`,
   NOTIFICATION_PREFERENCES: `${V1}/notifications/preferences`,
+  NOTIFICATION_READ: (notificationId: string) => `${V1}/notifications/${notificationId}/read`,
+
+  // Files
+  TRANSCRIPT_REQUESTS: `${V1}/files/transcript-requests`,
+  TRANSCRIPT_REQUEST: `${V1}/files/transcript-request`,
 
   // Admin
   ADMIN_ANALYTICS_ENGAGEMENT: `${V1}/admin/analytics/engagement`,

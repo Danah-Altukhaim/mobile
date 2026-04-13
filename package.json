@@ -7,7 +7,8 @@
     "apps/mobile",
     "apps/backend/shared",
     "apps/backend/gateway",
-    "apps/backend/services/*"
+    "apps/backend/services/*",
+    "apps/web/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
@@ -15,12 +16,19 @@
     "lint": "turbo run lint",
     "dev:backend": "turbo run dev --filter='./apps/backend/**'",
     "dev:mobile": "turbo run dev --filter=@masari/mobile",
+    "dev:admin": "turbo run dev --filter=@masari/admin-dashboard",
     "db:migrate": "node apps/backend/shared/src/db/migrate.js",
     "db:seed": "node apps/backend/shared/src/db/seed.js"
   },
   "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-expo": "~8.0.1",
+    "prettier": "^3.2.0",
     "turbo": "^2.4.0",
-    "typescript": "^5.4.0",
-    "prettier": "^3.2.0"
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@expo-google-fonts/montserrat": "^0.4.2",
+    "@expo-google-fonts/outfit": "^0.4.3"
   }
 }

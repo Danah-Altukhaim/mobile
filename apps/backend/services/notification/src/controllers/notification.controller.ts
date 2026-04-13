@@ -1,6 +1,27 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '@masari/backend-shared';
 
+// Mutable in-memory preferences state
+let currentPreferences: Record<string, any> = {
+  push_enabled: true,
+  email_enabled: true,
+  sms_enabled: false,
+  channels: {
+    payment_reminders: { push: true, email: true, sms: true },
+    grade_updates: { push: true, email: true, sms: false },
+    event_reminders: { push: true, email: false, sms: false },
+    social_updates: { push: true, email: false, sms: false },
+    admin_announcements: { push: true, email: true, sms: false },
+  },
+  quiet_hours: {
+    enabled: true,
+    start: '22:00',
+    end: '07:00',
+    timezone: 'Asia/Kuwait',
+  },
+  language: 'ar',
+};
+
 export class NotificationController {
   /** GET /api/v1/notifications */
   getNotifications = (_req: Request, res: Response): void => {
@@ -12,8 +33,8 @@ export class NotificationController {
           type: 'payment_reminder',
           title_ar: 'تذكير بموعد السداد',
           title_en: 'Payment Due Reminder',
-          body_ar: 'موعد سداد القسط الثاني للرسوم الدراسية بعد ٣ أيام. المبلغ المتبقي: ١٥,٠٠٠ ريال',
-          body_en: 'Second tuition installment is due in 3 days. Remaining amount: 15,000 SAR',
+          body_ar: 'موعد سداد القسط الثاني للرسوم الدراسية بعد ٣ أيام. المبلغ المتبقي: ١٥,٠٠٠ دينار',
+          body_en: 'Second tuition installment is due in 3 days. Remaining amount: 15,000 KWD',
           priority: 'high',
           is_read: false,
           created_at: '2026-04-08T08:00:00Z',
@@ -45,8 +66,8 @@ export class NotificationController {
           type: 'payment_reminder',
           title_ar: 'تأكيد استلام الدفعة',
           title_en: 'Payment Received Confirmation',
-          body_ar: 'تم استلام دفعة بمبلغ ١٠,٠٠٠ ريال بنجاح. رقم المرجع: PAY-2026-0412',
-          body_en: 'Payment of 10,000 SAR received successfully. Reference: PAY-2026-0412',
+          body_ar: 'تم استلام دفعة بمبلغ ١٠,٠٠٠ دينار بنجاح. رقم المرجع: PAY-2026-0412',
+          body_en: 'Payment of 10,000 KWD received successfully. Reference: PAY-2026-0412',
           priority: 'low',
           is_read: true,
           created_at: '2026-04-05T11:20:00Z',
@@ -63,42 +84,61 @@ export class NotificationController {
           created_at: '2026-04-04T09:00:00Z',
         },
       ],
-      meta: {
-        synced_at: new Date().toISOString(),
+      meta: { synced_at: new Date().toISOString() },
+    });
+  };
+
+  /** GET /api/v1/notifications/preferences */
+  getPreferences = (req: Request, res: Response): void => {
+    res.json({
+      success: true,
+      data: {
+        user_id: (req as AuthRequest).user.sub || 'user_123',
+        ...currentPreferences,
+        updated_at: new Date().toISOString(),
       },
+      meta: { synced_at: new Date().toISOString() },
     });
   };
 
   /** PUT /api/v1/notifications/preferences */
   updatePreferences = (req: Request, res: Response): void => {
-    const preferences = req.body;
+    const incoming = req.body;
+
+    // Deep merge channels
+    if (incoming.channels) {
+      for (const key of Object.keys(incoming.channels)) {
+        if (currentPreferences.channels[key]) {
+          currentPreferences.channels[key] = { ...currentPreferences.channels[key], ...incoming.channels[key] };
+        } else {
+          currentPreferences.channels[key] = incoming.channels[key];
+        }
+      }
+    }
+
+    // Merge top-level fields
+    if (incoming.push_enabled !== undefined) currentPreferences.push_enabled = incoming.push_enabled;
+    if (incoming.email_enabled !== undefined) currentPreferences.email_enabled = incoming.email_enabled;
+    if (incoming.sms_enabled !== undefined) currentPreferences.sms_enabled = incoming.sms_enabled;
+    if (incoming.quiet_hours) currentPreferences.quiet_hours = { ...currentPreferences.quiet_hours, ...incoming.quiet_hours };
+    if (incoming.language) currentPreferences.language = incoming.language;
 
     res.json({
       success: true,
       data: {
         user_id: (req as AuthRequest).user.sub || 'user_123',
-        push_enabled: preferences.push_enabled ?? true,
-        email_enabled: preferences.email_enabled ?? true,
-        sms_enabled: preferences.sms_enabled ?? false,
-        channels: {
-          payment_reminders: preferences.channels?.payment_reminders ?? { push: true, email: true, sms: true },
-          grade_updates: preferences.channels?.grade_updates ?? { push: true, email: true, sms: false },
-          event_reminders: preferences.channels?.event_reminders ?? { push: true, email: false, sms: false },
-          social_updates: preferences.channels?.social_updates ?? { push: true, email: false, sms: false },
-          admin_announcements: preferences.channels?.admin_announcements ?? { push: true, email: true, sms: false },
-        },
-        quiet_hours: preferences.quiet_hours ?? {
-          enabled: true,
-          start: '22:00',
-          end: '07:00',
-          timezone: 'Asia/Riyadh',
-        },
-        language: preferences.language ?? 'ar',
+        ...currentPreferences,
         updated_at: new Date().toISOString(),
       },
-      meta: {
-        synced_at: new Date().toISOString(),
-      },
+      meta: { synced_at: new Date().toISOString() },
+    });
+  };
+
+  /** PUT /api/v1/notifications/:id/read */
+  markAsRead = (req: Request, res: Response): void => {
+    res.json({
+      success: true,
+      data: { id: req.params.id, is_read: true, read_at: new Date().toISOString() },
     });
   };
 }

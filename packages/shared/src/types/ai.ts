@@ -35,6 +35,27 @@ export interface AIChatResponse {
   conversation_id: string;
   message: AIMessage;
   suggested_prompts: string[];
+  confidence_score: number;
+  model_tier: 'budget' | 'standard' | 'premium';
+  detected_language: 'ar' | 'en';
+  can_escalate: boolean;
+}
+
+export interface CourseRecommendation {
+  id: string;
+  course_code: string;
+  name_ar: string;
+  name_en: string;
+  credits: number;
+  reason_ar: string;
+  reason_en: string;
+  match_score: number;
+  historical_grade_avg: string;
+  workload_level: 'light' | 'moderate' | 'heavy';
+  schedule: string;
+  seats_available: number;
+  total_seats: number;
+  prerequisites: string[];
 }
 
 export interface RiskAlert {

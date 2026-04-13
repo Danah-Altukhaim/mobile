@@ -20,6 +20,26 @@ export class AdminController {
           library_search: { usage_count: 980, label_ar: 'بحث المكتبة', label_en: 'Library Search' },
           club_activities: { usage_count: 760, label_ar: 'أنشطة الأندية', label_en: 'Club Activities' },
         },
+        engagement_by_cohort: [
+          { cohort: '2023', active_users: 1050, avg_session_min: 26.1 },
+          { cohort: '2024', active_users: 1380, avg_session_min: 24.3 },
+          { cohort: '2025', active_users: 920, avg_session_min: 21.8 },
+          { cohort: '2026', active_users: 850, avg_session_min: 19.5 },
+        ],
+        engagement_by_major: [
+          { major_en: 'Computer Science', major_ar: 'علوم الحاسب', active_users: 820, avg_session_min: 28.4 },
+          { major_en: 'Engineering', major_ar: 'الهندسة', active_users: 710, avg_session_min: 25.1 },
+          { major_en: 'Business', major_ar: 'إدارة الأعمال', active_users: 680, avg_session_min: 22.7 },
+          { major_en: 'Science', major_ar: 'العلوم', active_users: 450, avg_session_min: 20.3 },
+          { major_en: 'Arts', major_ar: 'الآداب', active_users: 390, avg_session_min: 18.9 },
+        ],
+        engagement_by_year: [
+          { year: '1st Year', year_ar: 'السنة الأولى', active_users: 1100, avg_session_min: 19.2 },
+          { year: '2nd Year', year_ar: 'السنة الثانية', active_users: 980, avg_session_min: 22.5 },
+          { year: '3rd Year', year_ar: 'السنة الثالثة', active_users: 870, avg_session_min: 25.8 },
+          { year: '4th Year', year_ar: 'السنة الرابعة', active_users: 650, avg_session_min: 27.1 },
+          { year: '5th Year', year_ar: 'السنة الخامسة', active_users: 350, avg_session_min: 23.4 },
+        ],
         peak_hours: [
           { hour: 9, users: 1200, label_ar: '٩ صباحاً', label_en: '9 AM' },
           { hour: 13, users: 1850, label_ar: '١ ظهراً', label_en: '1 PM' },
@@ -272,6 +292,123 @@ export class AdminController {
       meta: {
         synced_at: new Date().toISOString(),
       },
+    });
+  };
+
+  /** GET /api/v1/admin/users */
+  listAdminUsers = (_req: Request, res: Response): void => {
+    res.json({
+      success: true,
+      data: [
+        {
+          id: 'admin_001',
+          email: 'dean@ksu.edu.sa',
+          name_ar: 'د. عبدالله الفيصل',
+          name_en: 'Dr. Abdullah Al-Faisal',
+          role: 'super_admin',
+          status: 'active',
+          created_at: '2025-09-01T00:00:00Z',
+          last_login: '2026-04-08T08:30:00Z',
+        },
+        {
+          id: 'admin_002',
+          email: 'registrar@ksu.edu.sa',
+          name_ar: 'نورة الشهري',
+          name_en: 'Noura Al-Shahri',
+          role: 'university_admin',
+          status: 'active',
+          created_at: '2025-09-15T00:00:00Z',
+          last_login: '2026-04-07T14:20:00Z',
+        },
+        {
+          id: 'admin_003',
+          email: 'advisor.cs@ksu.edu.sa',
+          name_ar: 'أحمد الغامدي',
+          name_en: 'Ahmed Al-Ghamdi',
+          role: 'advisor',
+          status: 'active',
+          created_at: '2025-10-01T00:00:00Z',
+          last_login: '2026-04-08T10:15:00Z',
+        },
+      ],
+      meta: { synced_at: new Date().toISOString() },
+    });
+  };
+
+  /** POST /api/v1/admin/users */
+  createAdminUser = (req: Request, res: Response): void => {
+    const { email, name_ar, name_en, role } = req.body;
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: `admin_${Date.now()}`,
+        email: email || 'new@ksu.edu.sa',
+        name_ar: name_ar || 'مستخدم جديد',
+        name_en: name_en || 'New User',
+        role: role || 'staff',
+        status: 'active',
+        created_at: new Date().toISOString(),
+        last_login: null,
+      },
+      meta: { synced_at: new Date().toISOString() },
+    });
+  };
+
+  /** PUT /api/v1/admin/users/:id/role */
+  updateAdminRole = (req: Request, res: Response): void => {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    res.json({
+      success: true,
+      data: {
+        id,
+        role: role || 'staff',
+        updated_at: new Date().toISOString(),
+        updated_by: (req as AuthRequest).user.sub || 'admin_001',
+      },
+      meta: { synced_at: new Date().toISOString() },
+    });
+  };
+
+  /** POST /api/v1/admin/students/import */
+  importStudents = (req: Request, res: Response): void => {
+    const { students } = req.body;
+    const count = Array.isArray(students) ? students.length : 150;
+
+    res.status(201).json({
+      success: true,
+      data: {
+        import_id: `imp_${Date.now()}`,
+        total_records: count,
+        successful: count - 2,
+        failed: 2,
+        errors: [
+          { row: 23, message_ar: 'رقم الطالب مكرر', message_en: 'Duplicate student ID' },
+          { row: 87, message_ar: 'بريد إلكتروني غير صالح', message_en: 'Invalid email format' },
+        ],
+        status: 'partial',
+      },
+      meta: { synced_at: new Date().toISOString() },
+    });
+  };
+
+  /** GET /api/v1/admin/students/export */
+  exportStudents = (_req: Request, res: Response): void => {
+    res.json({
+      success: true,
+      data: {
+        export_id: `exp_${Date.now()}`,
+        download_url: '/api/v1/admin/students/export/download',
+        format: 'csv',
+        total_records: 4200,
+        status: 'ready',
+        generated_at: new Date().toISOString(),
+        message_ar: 'تم تجهيز ملف التصدير',
+        message_en: 'Export file ready for download',
+      },
+      meta: { synced_at: new Date().toISOString() },
     });
   };
 

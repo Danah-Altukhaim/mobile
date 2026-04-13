@@ -6,34 +6,53 @@ import { Text } from '../../components/ui';
 import { colors } from '../../theme/colors';
 import { spacing, borderRadius } from '../../theme/spacing';
 import { aiApi } from '../../services/api';
+import { useDirection } from '../../hooks/useDirection';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-const suggestedPrompts = [
+const suggestedPromptsAr = [
   'ما جدولي بكرة؟',
   'كم باقي علي؟',
   'وش المواد اللي أقدر أسجلها؟',
   'كيف أرفع معدلي؟',
 ];
 
+const suggestedPromptsEn = [
+  "What's my schedule tomorrow?",
+  'How much do I owe?',
+  'What courses can I register for?',
+  'How can I improve my GPA?',
+];
+
+const initialMessageAr = 'مرحباً! أنا مستشارك الأكاديمي الذكي. كيف أقدر أساعدك اليوم؟';
+const initialMessageEn = "Hello! I'm your AI academic advisor. How can I help you today?";
+const typingAr = 'يكتب...';
+const typingEn = 'Typing...';
+const errorAr = 'عذراً، لم أتمكن من الاتصال بالخادم. حاول مرة أخرى لاحقاً.';
+const errorEn = 'Sorry, I could not connect to the server. Please try again later.';
+
 export function AIAdvisorScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { isRTL, textAlign, writingDirection } = useDirection();
+  const isAr = i18n.language === 'ar';
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'مرحباً! أنا مستشارك الأكاديمي الذكي. كيف أقدر أساعدك اليوم؟' },
+    { role: 'assistant', content: isAr ? initialMessageAr : initialMessageEn },
   ]);
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+
+  const prompts = isAr ? suggestedPromptsAr : suggestedPromptsEn;
 
   const chatMutation = useMutation({
     mutationFn: (message: string) =>
       aiApi.sendMessage({
         message,
         conversation_id: conversationId || undefined,
-        language: 'ar',
+        language: i18n.language,
       }),
     onSuccess: (response) => {
       if (response.data) {
@@ -45,13 +64,9 @@ export function AIAdvisorScreen() {
       }
     },
     onError: () => {
-      // Fallback if backend is unavailable
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'assistant',
-          content: 'عذراً، لم أتمكن من الاتصال بالخادم. حاول مرة أخرى لاحقاً.',
-        },
+        { role: 'assistant', content: isAr ? errorAr : errorEn },
       ]);
     },
   });
@@ -69,52 +84,90 @@ export function AIAdvisorScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.header}>
-        <Text variant="h3" color={colors.textInverse}>{t('ai.title')}</Text>
-      </View>
+      <View style={styles.header} />
 
       <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
-        {messages.map((msg, i) => (
-          <View
-            key={i}
-            style={[styles.bubble, msg.role === 'user' ? styles.userBubble : styles.assistantBubble]}
-          >
-            <Text
-              variant="body"
-              color={msg.role === 'user' ? colors.textInverse : colors.textPrimary}
+        <Text variant="h2" style={[styles.screenTitle, { textAlign, writingDirection }]}>
+          {t('ai.title')}
+        </Text>
+        {messages.map((msg, i) => {
+          const isUser = msg.role === 'user';
+          const userAlign = isRTL ? 'flex-start' : 'flex-end';
+          const assistantAlign = isRTL ? 'flex-end' : 'flex-start';
+          return (
+            <View
+              key={i}
+              style={[
+                styles.bubble,
+                isUser ? styles.userBubble : styles.assistantBubble,
+                { alignSelf: isUser ? userAlign : assistantAlign },
+              ]}
             >
-              {msg.content}
-            </Text>
-          </View>
-        ))}
+              <Text
+                variant="body"
+                color={isUser ? colors.textInverse : colors.textPrimary}
+                style={{ textAlign, writingDirection }}
+              >
+                {msg.content}
+              </Text>
+            </View>
+          );
+        })}
 
         {chatMutation.isPending && (
-          <View style={[styles.bubble, styles.assistantBubble]}>
-            <Text variant="body" color={colors.textSecondary}>يكتب...</Text>
+          <View
+            style={[
+              styles.bubble,
+              styles.assistantBubble,
+              { alignSelf: isRTL ? 'flex-end' : 'flex-start' },
+            ]}
+          >
+            <Text variant="body" color={colors.textSecondary} style={{ textAlign, writingDirection }}>
+              {isAr ? typingAr : typingEn}
+            </Text>
           </View>
         )}
 
         {messages.length <= 1 && (
           <View style={styles.suggestions}>
-            <Text variant="caption" color={colors.textSecondary}>{t('ai.suggestedPrompts')}</Text>
-            {suggestedPrompts.map((prompt, i) => (
-              <TouchableOpacity key={i} style={styles.suggestionChip} onPress={() => sendMessage(prompt)}>
-                <Text variant="caption" color={colors.primary}>{prompt}</Text>
+            <Text
+              variant="caption"
+              color={colors.textSecondary}
+              style={{ textAlign, writingDirection }}
+            >
+              {t('ai.suggestedPrompts')}
+            </Text>
+            {prompts.map((prompt, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.suggestionChip,
+                  { alignSelf: isRTL ? 'flex-end' : 'flex-start' },
+                ]}
+                onPress={() => sendMessage(prompt)}
+              >
+                <Text
+                  variant="caption"
+                  color={colors.primary}
+                  style={{ textAlign, writingDirection }}
+                >
+                  {prompt}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
       </ScrollView>
 
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { writingDirection }]}
           placeholder={t('ai.placeholder')}
           placeholderTextColor={colors.textTertiary}
           value={input}
           onChangeText={setInput}
           onSubmitEditing={() => sendMessage(input)}
-          textAlign="right"
+          textAlign={textAlign}
           editable={!chatMutation.isPending}
         />
         <TouchableOpacity
@@ -133,9 +186,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
     backgroundColor: colors.primary,
-    padding: spacing.base,
     paddingTop: 50,
-    alignItems: 'center',
+    height: 70,
+  },
+  screenTitle: {
+    marginBottom: spacing.base,
   },
   messages: { flex: 1 },
   messagesContent: { padding: spacing.base },
@@ -147,13 +202,9 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     backgroundColor: colors.primary,
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 4,
   },
   assistantBubble: {
     backgroundColor: colors.surfaceVariant,
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4,
   },
   suggestions: { marginTop: spacing.base, gap: spacing.sm },
   suggestionChip: {
@@ -166,7 +217,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   inputRow: {
-    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     padding: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.divider,
@@ -179,7 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
     fontSize: 16,
-    fontFamily: 'Cairo_400Regular',
+    fontFamily: 'Almarai_400Regular',
   },
   sendButton: {
     width: 44,
@@ -188,7 +240,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: spacing.sm,
   },
   sendButtonDisabled: { opacity: 0.5 },
 });

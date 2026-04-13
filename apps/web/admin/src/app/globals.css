@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+@source "../../";
+
+/* CCK Brand — Canadian College of Kuwait
+ * Tokens extracted from cck.edu.kw (see /CCK_BRAND.md).
+ * Primary green #006341, lime accent #76B82A, red #e20613.
+ * Gotham is proprietary → Montserrat is used as the geometric substitute.
+ * Hind is loaded for body copy; Noto Sans Arabic for Arabic.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Hind:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+@theme {
+  /* ── Primary — CCK Green (rt-primary #006341) ──
+   * Token name kept as `pair-*` so existing Tailwind usage
+   * (bg-pair-500, text-pair-600, …) rebrands without edits.
+   */
+  --color-pair-50:  #F0F9EE;
+  --color-pair-100: #E6F2E2;
+  --color-pair-200: #C5E0BD;
+  --color-pair-300: #9DCA90;
+  --color-pair-400: #3EB75E;
+  --color-pair-500: #006341;
+  --color-pair-600: #006341;
+  --color-pair-700: #005A3A;
+  --color-pair-800: #004D32;
+  --color-pair-900: #003D27;
+
+  /* ── Secondary — CCK Lime (rt-secondary #76B82A) ── */
+  --color-oasis-50:  #F0F9E7;
+  --color-oasis-100: #E6F2E2;
+  --color-oasis-200: #C8E5B0;
+  --color-oasis-300: #A8D968;
+  --color-oasis-500: #76B82A;
+  --color-oasis-600: #5A9020;
+  --color-oasis-700: #3EB75E;
+  --color-oasis-800: #1E6B3E;
+
+  /* ── Warning — CCK orange (color-warning #FF8F3C) ── */
+  --color-gold-50:  #FFF4E5;
+  --color-gold-100: #FFE9CC;
+  --color-gold-500: #FF8F3C;
+  --color-gold-600: #E67328;
+  --color-gold-700: #C05E1F;
+
+  /* ── Danger — CCK Red (rt-red-primary-2 #e20613) ── */
+  --color-danger-50:  #FCE5E7;
+  --color-danger-100: #FBC8CA;
+  --color-danger-200: #F79098;
+  --color-danger-400: #ED3D47;
+  --color-danger-500: #E20613;
+  --color-danger-600: #E20613;
+  --color-danger-700: #A30010;
+  --color-danger-900: #560008;
+
+  /* ── Shadows (Neutral Black base) ── */
+  --shadow-xs: 0 1px 2px rgba(30,30,30,0.05);
+  --shadow-sm: 0 2px 4px rgba(30,30,30,0.08);
+  --shadow-md: 0 4px 12px rgba(30,30,30,0.10);
+  --shadow-lg: 0 8px 24px rgba(30,30,30,0.12);
+  --shadow-xl: 0 16px 48px rgba(30,30,30,0.16);
+
+  /* ── Border radius — CCK uses very tight 3px on all interactives.
+   * No pill buttons, no large rounded cards. `full` reserved for avatars.
+   * Re-pointing Tailwind's radius scale rebrands `rounded-lg`,
+   * `rounded-xl`, `rounded-2xl` usages app-wide.
+   */
+  --radius-xs: 3px;
+  --radius-sm: 3px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+
+  /* ── Font families ──
+   * Gotham is proprietary → Montserrat (geometric sans) substitutes.
+   * Hind is CCK's English body face. Noto Sans Arabic for Arabic.
+   */
+  --font-heading: 'Montserrat', 'Gotham', system-ui, sans-serif;
+  --font-body: 'Hind', system-ui, sans-serif;
+  --font-arabic: 'Noto Sans Arabic', 'Cairo', system-ui, sans-serif;
+}
+
+/* ── Base typography ──
+ * Body color = CCK --rt-body (#737477), headings = CCK --rt-heading (#222222).
+ */
+body {
+  font-family: 'Hind', system-ui, sans-serif;
+  color: #222222;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Montserrat', 'Gotham', system-ui, sans-serif;
+  color: #222222;
+}
+
+/* Arabic containers use Noto Sans Arabic.
+ * CCK rule: never add letter-spacing to Arabic (breaks ligatures),
+ * line-height bumped so ligatures aren't clipped. */
+[dir="rtl"],
+[lang="ar"] {
+  font-family: 'Noto Sans Arabic', 'Cairo', system-ui, sans-serif;
+  letter-spacing: 0;
+  line-height: 1.8;
+}

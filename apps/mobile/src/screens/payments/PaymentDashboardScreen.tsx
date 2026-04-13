@@ -1,14 +1,21 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
-import { Text, Card, Button, Badge, ScreenSkeleton } from '../../components/ui';
+import { Text, Card, Button, Badge, ScreenSkeleton, Icon } from '../../components/ui';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { academicApi } from '../../services/api';
+import { localized, currentLocale, toLatnDigits, formatCurrency } from '../../i18n/helpers';
+import { useDirection } from '../../hooks/useDirection';
 
 export function PaymentDashboardScreen() {
   const { t } = useTranslation();
+  const navigation = useNavigation<any>();
+  const { isRTL, textAlign, writingDirection } = useDirection();
+  const rowDirection = isRTL ? 'row-reverse' : 'row';
+  const rightAlign = isRTL ? 'flex-start' : 'flex-end';
 
   const { data, isLoading } = useQuery({
     queryKey: ['student', 'fees'],
@@ -19,24 +26,37 @@ export function PaymentDashboardScreen() {
 
   const dashboard = data?.data;
   const currency = dashboard?.currency || 'KWD';
-  const formatter = new Intl.NumberFormat('ar', { style: 'currency', currency });
+  const locale = currentLocale();
+  const formatter = { format: (n: number) => formatCurrency(n, currency) };
+  const formatDate = (d: Date) => toLatnDigits(d.toLocaleDateString(locale));
 
   return (
     <View style={styles.container}>
       {/* Balance Header */}
       <View style={styles.header}>
         <Text variant="body" color={colors.textInverse}>{t('payments.balance')}</Text>
-        <Text variant="h1" color={colors.secondary} style={styles.amount}>
+        <Text
+          variant="h1"
+          color={colors.secondary}
+          style={[styles.amount, { fontFamily: 'Almarai_400Regular' }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           {dashboard?.balance_due != null ? formatter.format(dashboard.balance_due) : '—'}
         </Text>
         {dashboard?.next_due_date && (
           <Text variant="caption" color={colors.textInverse}>
-            {t('payments.dueDate')}: {new Date(dashboard.next_due_date).toLocaleDateString('ar')}
+            {t('payments.dueDate')}: {formatDate(new Date(dashboard.next_due_date))}
           </Text>
         )}
         <Button
           title={t('payments.payNow')}
-          onPress={() => {}}
+          onPress={() => navigation.navigate('PaymentMethod', {
+            amount: dashboard?.balance_due ?? 0,
+            feeIds: (dashboard?.fees ?? [])
+              .filter((f: any) => parseFloat(f.paid_amount ?? 0) < parseFloat(f.amount ?? 0))
+              .map((f: any) => f.id),
+          })}
           variant="secondary"
           style={styles.payButton}
           disabled={!dashboard?.balance_due || dashboard.balance_due <= 0}
@@ -44,15 +64,65 @@ export function PaymentDashboardScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
+        {/* Quick Links */}
+        <View style={[styles.quickLinks, { flexDirection: rowDirection }]}>
+          <TouchableOpacity
+            style={styles.quickLink}
+            onPress={() => navigation.navigate('PaymentHistory')}
+          >
+            <View style={styles.quickLinkIcon}>
+              <Icon name="payment-history" size={26} color={colors.primary} />
+            </View>
+            <Text variant="caption" style={styles.quickLinkLabel}>
+              {t('payments.history')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickLink}
+            onPress={() => navigation.navigate('InstallmentPlans')}
+          >
+            <View style={styles.quickLinkIcon}>
+              <Icon name="installment" size={26} color={colors.primary} />
+            </View>
+            <Text variant="caption" style={styles.quickLinkLabel}>
+              {t('payments.installments')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickLink}
+            onPress={() => navigation.navigate('FinancialAid')}
+          >
+            <View style={styles.quickLinkIcon}>
+              <Icon name="financial-aid" size={26} color={colors.primary} />
+            </View>
+            <Text variant="caption" style={styles.quickLinkLabel}>
+              {t('payments.financialAid')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickLink}
+            onPress={() => navigation.navigate('RefundTracking')}
+          >
+            <View style={styles.quickLinkIcon}>
+              <Icon name="refund" size={26} color={colors.primary} />
+            </View>
+            <Text variant="caption" style={styles.quickLinkLabel}>
+              {t('payments.refunds')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Fee Breakdown */}
         <Card elevation="md" style={styles.card}>
-          <Text variant="h3" style={styles.sectionTitle}>تفاصيل الرسوم</Text>
+          <Text variant="h3" style={styles.sectionTitle}>{t('payments.feeDetails')}</Text>
           {dashboard?.fees?.map((fee: any, i: number) => {
             const isPaid = parseFloat(fee.paid_amount) >= parseFloat(fee.amount);
             return (
-              <View key={i} style={styles.feeRow}>
-                <Text variant="body">{fee.description_ar}</Text>
-                <View style={styles.feeRight}>
+              <View key={i} style={[styles.feeRow, { flexDirection: rowDirection }]}>
+                <Text variant="body" style={{ textAlign, writingDirection }}>
+                  {localized(fee, 'description')}
+                </Text>
+                <View style={[styles.feeRight, { alignItems: rightAlign }]}>
                   <Text variant="bodyBold">{formatter.format(parseFloat(fee.amount))}</Text>
                   <Badge
                     label={isPaid ? t('payments.paid') : t('payments.pending')}
@@ -69,11 +139,13 @@ export function PaymentDashboardScreen() {
           <Text variant="h3" style={styles.sectionTitle}>{t('payments.history')}</Text>
           {dashboard?.recent_payments?.length > 0 ? (
             dashboard.recent_payments.map((payment: any, i: number) => (
-              <View key={i} style={styles.feeRow}>
+              <View key={i} style={[styles.feeRow, { flexDirection: rowDirection }]}>
                 <View>
-                  <Text variant="body">{formatter.format(parseFloat(payment.amount))}</Text>
-                  <Text variant="caption" color={colors.textSecondary}>
-                    {new Date(payment.created_at).toLocaleDateString('ar')} • {payment.method || 'KNET'}
+                  <Text variant="body" style={{ textAlign, writingDirection }}>
+                    {formatter.format(parseFloat(payment.amount))}
+                  </Text>
+                  <Text variant="caption" color={colors.textSecondary} style={{ textAlign, writingDirection }}>
+                    {formatDate(new Date(payment.created_at))} • {payment.method || 'KNET'}
                   </Text>
                 </View>
                 <Badge
@@ -83,7 +155,9 @@ export function PaymentDashboardScreen() {
               </View>
             ))
           ) : (
-            <Text variant="body" color={colors.textSecondary}>{t('common.noData')}</Text>
+            <Text variant="body" color={colors.textSecondary} style={{ textAlign, writingDirection }}>
+              {t('common.noData')}
+            </Text>
           )}
         </Card>
       </ScrollView>
@@ -101,13 +175,18 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
-  amount: { fontSize: 40, marginVertical: spacing.sm },
+  amount: {
+    fontSize: 40,
+    lineHeight: 60,
+    marginVertical: spacing.sm,
+    includeFontPadding: false,
+    paddingTop: 8,
+  },
   payButton: { marginTop: spacing.base, width: '100%' },
   scroll: { padding: spacing.base },
   card: { marginBottom: spacing.base },
   sectionTitle: { marginBottom: spacing.sm },
   feeRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.sm,
@@ -115,4 +194,18 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.divider,
   },
   feeRight: { alignItems: 'flex-end', gap: 4 },
+  quickLinks: {
+    marginBottom: spacing.base,
+  },
+  quickLink: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  quickLinkIcon: {
+    marginBottom: spacing.xs,
+  },
+  quickLinkLabel: {
+    textAlign: 'center',
+  },
 });

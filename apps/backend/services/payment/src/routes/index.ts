@@ -7,5 +7,9 @@ export function registerRoutes(app: Express): void {
 
   app.post('/api/v1/payments/initiate', authenticate, controller.initiatePayment);
   app.post('/api/v1/payments/webhook', controller.handleWebhook);
+  app.get('/api/v1/payments/history', authenticate, controller.getHistory);
+  app.get('/api/v1/payments/installments', authenticate, controller.getInstallments);
+  app.get('/api/v1/payments/financial-aid', authenticate, controller.getFinancialAid);
+  app.get('/api/v1/payments/refunds', authenticate, controller.getRefunds);
   app.get('/api/v1/payments/:id/receipt', authenticate, controller.getReceipt);
 }

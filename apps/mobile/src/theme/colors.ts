@@ -1,40 +1,125 @@
-export const colors = {
-  // Primary - Deep teal (trust, education)
-  primary: '#1B4D3E',
-  primaryLight: '#2A7A5F',
-  primaryDark: '#0F3129',
+// CCK Brand — Canadian College of Kuwait
+// Primary green #006341, lime accent #76B82A, red #E20613
+// Tokens extracted from cck.edu.kw CSS custom properties (see CCK_BRAND.md).
 
-  // Secondary - Gold (achievement, GCC aesthetic)
-  secondary: '#D4AF37',
-  secondaryLight: '#E8CB6B',
-  secondaryDark: '#B8941E',
+export const lightColors = {
+  // Primary — CCK Green
+  primary: '#006341',
+  primaryLight: '#3EB75E',
+  primaryDark: '#004D32',
 
-  // Accent
-  accent: '#2196F3',
+  // Secondary — Lime accent
+  secondary: '#76B82A',
+  secondaryLight: '#A8D968',
+  secondaryDark: '#5A9020',
 
-  // Neutrals
-  background: '#FAFAFA',
+  // Accent — Light growth green wash
+  accent: '#E6F2E2',
+
+  // Brand Red — Canadian identity / maple leaf moments, urgent CTAs
+  // (CCK_BRAND.md §Colors — --rt-red-primary-2 / --rt-red-secondary)
+  brandRed: '#E20613',
+  brandRedDark: '#A30010',
+  brandRedWash: '#FDECEE',
+
+  // Surfaces
+  background: '#F6F6F6',
   surface: '#FFFFFF',
-  surfaceVariant: '#F5F5F5',
-  border: '#E0E0E0',
+  surfaceVariant: '#F6F6F6',
+  surfaceRaised: '#FFFFFF',
+
+  // Borders & Dividers
+  border: '#D9D9D9',
+  borderActive: '#737477',
   divider: '#EEEEEE',
 
   // Text
-  textPrimary: '#1A1A1A',
-  textSecondary: '#666666',
-  textTertiary: '#999999',
+  textPrimary: '#222222',
+  textSecondary: '#737477',
+  textTertiary: '#8A8A8A',
+  textPlaceholder: '#B0B0B0',
   textInverse: '#FFFFFF',
 
-  // Status
-  success: '#4CAF50',
-  warning: '#FF9800',
-  error: '#F44336',
-  info: '#2196F3',
+  // Semantic
+  success: '#3EB75E',
+  warning: '#FF8F3C',
+  error: '#E20613',
+  info: '#1BA2DB',
 
   // Risk levels
-  riskCritical: '#F44336',
-  riskWarning: '#FF9800',
-  riskWatch: '#FFC107',
+  riskCritical: '#E20613',
+  riskWarning: '#FF8F3C',
+  riskWatch: '#F5D4A0',
+
+  // Scale (names kept for API compatibility — remapped to CCK green spectrum)
+  blue900: '#003D27',
+  blue800: '#004D32',
+  blue700: '#006341',
+  blue400: '#3EB75E',
+  blue300: '#76B82A',
+  blue200: '#E6F2E2',
+  blue100: '#F0F7EE',
 };
 
-export type Colors = typeof colors;
+export const darkColors = {
+  // Primary — lighter green in dark mode
+  primary: '#3EB75E',
+  primaryLight: '#76B82A',
+  primaryDark: '#006341',
+
+  // Secondary
+  secondary: '#76B82A',
+  secondaryLight: '#A8D968',
+  secondaryDark: '#5A9020',
+
+  // Accent
+  accent: '#004D32',
+
+  // Brand Red — same hue in dark mode (maple leaf stays red)
+  brandRed: '#E20613',
+  brandRedDark: '#A30010',
+  brandRedWash: '#3A0B10',
+
+  // Surfaces — CCK footer black + copyright-border shade
+  background: '#181818',
+  surface: '#242424',
+  surfaceVariant: '#2D2D2D',
+  surfaceRaised: '#242424',
+
+  // Borders & Dividers
+  border: '#2D2D2D',
+  borderActive: '#737477',
+  divider: '#242424',
+
+  // Text
+  textPrimary: '#F6F6F6',
+  textSecondary: '#A0A0A0',
+  textTertiary: '#737477',
+  textPlaceholder: '#6B6B6B',
+  textInverse: '#222222',
+
+  // Semantic
+  success: '#3EB75E',
+  warning: '#FF8F3C',
+  error: '#E20613',
+  info: '#1BA2DB',
+
+  // Risk levels
+  riskCritical: '#E20613',
+  riskWarning: '#FF8F3C',
+  riskWatch: '#F5D4A0',
+
+  // Scale (inverted — lighter values at top for dark mode)
+  blue900: '#F0F7EE',
+  blue800: '#E6F2E2',
+  blue700: '#76B82A',
+  blue400: '#3EB75E',
+  blue300: '#006341',
+  blue200: '#004D32',
+  blue100: '#003D27',
+};
+
+// Default export for direct imports (light mode)
+export const colors = lightColors;
+
+export type Colors = typeof lightColors;
