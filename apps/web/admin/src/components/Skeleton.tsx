@@ -42,16 +42,17 @@ export function SkeletonChart() {
   );
 }
 
-export function SkeletonPage() {
+export function SkeletonPage({ stats = 3, chart = true }: { stats?: number; chart?: boolean } = {}) {
+  const cols = stats >= 5 ? 'lg:grid-cols-5' : stats === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3';
   return (
     <div className="animate-pulse">
       <div className="h-7 bg-gray-200 rounded w-48 mb-6" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
+      <div className={`grid grid-cols-2 ${cols} gap-4 mb-8`}>
+        {Array.from({ length: stats }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
       </div>
-      <SkeletonChart />
+      {chart && <SkeletonChart />}
     </div>
   );
 }

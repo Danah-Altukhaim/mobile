@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Card from '@/components/Card';
 import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
@@ -24,17 +25,12 @@ export default function PaymentsPage() {
   const { t, locale } = useI18n();
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
-  const [data, setData] = useState<PaymentData | null>(null);
-  const [error, setError] = useState(false);
+  const { data, isError, refetch } = useQuery<PaymentData>({
+    queryKey: ['payments', 'analytics'],
+    queryFn: () => api.getPaymentAnalytics() as Promise<PaymentData>,
+  });
   const [overdueSortKey, setOverdueSortKey] = useState<OverdueSortKey>('amount');
   const [overdueSortDir, setOverdueSortDir] = useState<SortDir>('desc');
-
-  const loadData = useCallback(() => {
-    setError(false);
-    api.getPaymentAnalytics().then((d) => setData(d as PaymentData)).catch(() => setError(true));
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   const toggleOverdueSort = (key: OverdueSortKey) => {
     if (overdueSortKey === key) {
@@ -53,7 +49,7 @@ export default function PaymentsPage() {
     });
   }, [data, overdueSortKey, overdueSortDir]);
 
-  if (error) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={loadData} retryLabel={t('common.retry')} />;
+  if (isError) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={() => refetch()} retryLabel={t('common.retry')} />;
   if (!data) return <SkeletonPage />;
 
   const fmt = (n: number) => (n / 1000000).toFixed(1) + 'M KWD';
@@ -111,7 +107,7 @@ export default function PaymentsPage() {
             {data.by_method.map((m) => (
               <div key={m.method}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{m.method}</span>
+                  <span className="text-gray-600">{t(m.method)}</span>
                   <span className="text-gray-500">{m.count.toLocaleString()} {t('payments.transactions')} &middot; {(m.amount / 1000000).toFixed(1)}M KWD</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-3">
@@ -141,7 +137,7 @@ export default function PaymentsPage() {
           <tbody>
             {sortedOverdue.map((c) => (
               <tr key={c.college} className="border-b border-gray-50">
-                <td className="py-3">{c.college}</td>
+                <td className="py-3">{t(c.college)}</td>
                 <td className="py-3">{c.students}</td>
                 <td className="py-3 font-medium text-danger-600">{(c.amount / 1000).toFixed(0)}K KWD</td>
               </tr>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { SkeletonTable } from '@/components/Skeleton';
@@ -8,6 +9,9 @@ import ErrorState from '@/components/ErrorState';
 import EmptyState from '@/components/EmptyState';
 import Pagination from '@/components/Pagination';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import RoleMenu from '@/components/RoleMenu';
+
+const USERS_KEY = ['users'] as const;
 
 interface AdminUser {
   id: string;
@@ -24,9 +28,12 @@ const PAGE_SIZE = 10;
 
 export default function UsersPage() {
   const { t, locale, isRTL } = useI18n();
+  const qc = useQueryClient();
 
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [error, setError] = useState(false);
+  const { data: users = [], isError, isLoading, refetch } = useQuery<AdminUser[]>({
+    queryKey: USERS_KEY,
+    queryFn: () => api.getUsers() as Promise<AdminUser[]>,
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [newUser, setNewUser] = useState({ email: '', name_en: '', name_ar: '', role: 'staff' });
@@ -55,13 +62,6 @@ export default function UsersPage() {
 
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const loadUsers = useCallback(() => {
-    setError(false);
-    api.getUsers().then(d => setUsers(d as AdminUser[])).catch(() => setError(true));
-  }, []);
-
-  useEffect(() => { loadUsers(); }, [loadUsers]);
-
   const getRoleName = (role?: string) => {
     const map: Record<string, string> = {
       super_admin: t('users.superAdmin'),
@@ -84,7 +84,7 @@ export default function UsersPage() {
     setCreating(true);
     try {
       const user = (await api.createUser(newUser)) as unknown as AdminUser;
-      setUsers(prev => [...prev, user]);
+      qc.setQueryData<AdminUser[]>(USERS_KEY, (prev) => (prev ? [...prev, user] : [user]));
       setShowForm(false);
       setNewUser({ email: '', name_en: '', name_ar: '', role: 'staff' });
     } finally {
@@ -105,7 +105,9 @@ export default function UsersPage() {
     if (!pendingRoleChange) return;
     const { userId, newRole } = pendingRoleChange;
     await api.updateRole(userId, newRole);
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    qc.setQueryData<AdminUser[]>(USERS_KEY, (prev) =>
+      prev?.map((u) => u.id === userId ? { ...u, role: newRole } : u) ?? prev,
+    );
     setPendingRoleChange(null);
   };
 
@@ -127,24 +129,24 @@ export default function UsersPage() {
 
   const handleBulkRoleChange = async () => {
     setBulkConfirm(null);
-    try {
-      await api.bulkUpdateRole(Array.from(selectedIds), bulkRole);
-      setUsers((prev) => prev.map((u) => selectedIds.has(u.id) ? { ...u, role: bulkRole } : u));
-      setSuccessMsg(t('users.bulkSuccess', { count: selectedIds.size }));
-      setSelectedIds(new Set());
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch { setError(true); }
+    await api.bulkUpdateRole(Array.from(selectedIds), bulkRole);
+    qc.setQueryData<AdminUser[]>(USERS_KEY, (prev) =>
+      prev?.map((u) => selectedIds.has(u.id) ? { ...u, role: bulkRole } : u) ?? prev,
+    );
+    setSuccessMsg(t('users.bulkSuccess', { count: selectedIds.size }));
+    setSelectedIds(new Set());
+    setTimeout(() => setSuccessMsg(null), 4000);
   };
 
   const handleBulkSuspend = async () => {
     setBulkConfirm(null);
-    try {
-      await api.bulkSuspend(Array.from(selectedIds));
-      setUsers((prev) => prev.map((u) => selectedIds.has(u.id) ? { ...u, status: 'inactive' } : u));
-      setSuccessMsg(t('users.bulkSuccess', { count: selectedIds.size }));
-      setSelectedIds(new Set());
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch { setError(true); }
+    await api.bulkSuspend(Array.from(selectedIds));
+    qc.setQueryData<AdminUser[]>(USERS_KEY, (prev) =>
+      prev?.map((u) => selectedIds.has(u.id) ? { ...u, status: 'inactive' } : u) ?? prev,
+    );
+    setSuccessMsg(t('users.bulkSuccess', { count: selectedIds.size }));
+    setSelectedIds(new Set());
+    setTimeout(() => setSuccessMsg(null), 4000);
   };
 
   const handleExportFiltered = async () => {
@@ -154,30 +156,24 @@ export default function UsersPage() {
       setSuccessMsg(t('users.exportReady', { count: data.total_records, id: data.export_id }));
       setShowExportPanel(false);
       setTimeout(() => setSuccessMsg(null), 4000);
-    } catch { setError(true); }
-    finally { setExporting(false); }
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleExport = async () => {
     setSuccessMsg(null);
-    try {
-      const data = (await api.exportStudents()) as { export_id: string; total_records: number };
-      const msg = t('users.exportReady', { count: data.total_records, id: data.export_id });
-      setSuccessMsg(msg);
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch {
-      setError(true);
-    }
+    const data = (await api.exportStudents()) as { export_id: string; total_records: number };
+    const msg = t('users.exportReady', { count: data.total_records, id: data.export_id });
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(null), 4000);
   };
 
   const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Show success banner without actual parsing
-    const msg = t('users.importComplete', { success: 0, total: 0, failed: 0 });
-    setImportBanner(msg);
-    setTimeout(() => setImportBanner(null), 4000);
-    // Reset file input
+    setImportBanner(t('users.importPreview', { file: file.name }));
+    setTimeout(() => setImportBanner(null), 5000);
     e.target.value = '';
   };
 
@@ -194,23 +190,23 @@ export default function UsersPage() {
   const primaryName = (u: AdminUser) => locale === 'ar' ? u.name_ar : u.name_en;
   const secondaryName = (u: AdminUser) => locale === 'ar' ? u.name_en : u.name_ar;
 
-  if (users.length === 0 && !error) {
+  if (isError) {
+    return (
+      <ErrorState
+        title={t('common.error')}
+        description={t('common.errorDescription')}
+        onRetry={() => refetch()}
+        retryLabel={t('common.retry')}
+      />
+    );
+  }
+
+  if (isLoading) {
     return (
       <div dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="h-7 bg-gray-200 rounded w-48 mb-6 animate-pulse" />
         <SkeletonTable rows={5} cols={5} />
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <ErrorState
-        title={t('common.error')}
-        description={t('common.errorDescription')}
-        onRetry={loadUsers}
-        retryLabel={t('common.retry')}
-      />
     );
   }
 
@@ -248,16 +244,16 @@ export default function UsersPage() {
       </div>
 
       {successMsg && (
-        <div className="bg-oasis-50 border border-oasis-200 rounded-lg p-3 mb-4 flex items-center justify-between">
+        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-3 mb-4 flex items-center justify-between">
           <p className="text-sm text-oasis-700">{successMsg}</p>
-          <button onClick={() => setSuccessMsg(null)} className="text-oasis-500 hover:text-oasis-700 text-sm ms-4">&times;</button>
+          <button onClick={() => setSuccessMsg(null)} aria-label={t('common.cancel')} className="text-oasis-500 hover:text-oasis-700 text-sm ms-4">&times;</button>
         </div>
       )}
 
       {importBanner && (
-        <div className="bg-oasis-50 border border-oasis-200 rounded-lg p-3 mb-4 flex items-center justify-between">
+        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-3 mb-4 flex items-center justify-between">
           <p className="text-sm text-oasis-700">{importBanner}</p>
-          <button onClick={() => setImportBanner(null)} className="text-oasis-500 hover:text-oasis-700 text-sm ms-4">&times;</button>
+          <button onClick={() => setImportBanner(null)} aria-label={t('common.cancel')} className="text-oasis-500 hover:text-oasis-700 text-sm ms-4">&times;</button>
         </div>
       )}
 
@@ -362,43 +358,56 @@ export default function UsersPage() {
       {showForm && (
         <form onSubmit={handleCreate} className="bg-white rounded-xl border border-gray-200 p-6 mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input
-              type="email"
-              placeholder={t('users.email')}
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              required
-            />
-            <input
-              type="text"
-              placeholder={t('users.nameEn')}
-              value={newUser.name_en}
-              onChange={(e) => setNewUser({ ...newUser, name_en: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              dir="ltr"
-              required
-            />
-            <input
-              type="text"
-              placeholder={t('users.nameAr')}
-              value={newUser.name_ar}
-              onChange={(e) => setNewUser({ ...newUser, name_ar: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              dir="rtl"
-              required
-            />
+            <div>
+              <label htmlFor="new-user-email" className="block text-xs font-medium text-gray-700 mb-1">{t('users.email')}</label>
+              <input
+                id="new-user-email"
+                type="email"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="new-user-name-en" className="block text-xs font-medium text-gray-700 mb-1">{t('users.nameEn')}</label>
+              <input
+                id="new-user-name-en"
+                type="text"
+                value={newUser.name_en}
+                onChange={(e) => setNewUser({ ...newUser, name_en: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                dir="ltr"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="new-user-name-ar" className="block text-xs font-medium text-gray-700 mb-1">{t('users.nameAr')}</label>
+              <input
+                id="new-user-name-ar"
+                type="text"
+                value={newUser.name_ar}
+                onChange={(e) => setNewUser({ ...newUser, name_ar: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                dir="rtl"
+                required
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <select
-              value={newUser.role}
-              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>{getRoleName(r)}</option>
-              ))}
-            </select>
+          <div className="flex items-end gap-4">
+            <div>
+              <label htmlFor="new-user-role" className="block text-xs font-medium text-gray-700 mb-1">{t('users.role')}</label>
+              <select
+                id="new-user-role"
+                value={newUser.role}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>{getRoleName(r)}</option>
+                ))}
+              </select>
+            </div>
             <button
               type="submit"
               disabled={creating}
@@ -452,15 +461,13 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 text-gray-600">{u.email}</td>
                     <td className="px-6 py-4">
-                      <select
+                      <RoleMenu
                         value={u.role}
-                        onChange={(e) => requestRoleChange(u, e.target.value)}
-                        className={`px-2 py-1 rounded text-xs font-medium border-0 ${roleBadge(u.role)}`}
-                      >
-                        {ROLES.map((r) => (
-                          <option key={r} value={r}>{getRoleName(r)}</option>
-                        ))}
-                      </select>
+                        options={ROLES.map((r) => ({ value: r, label: getRoleName(r) }))}
+                        badgeClass={roleBadge(u.role)}
+                        ariaLabel={`${primaryName(u)}: ${t('users.role')}`}
+                        onChange={(next) => requestRoleChange(u, next)}
+                      />
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-0.5 rounded text-xs ${u.status === 'active' ? 'bg-oasis-100 text-oasis-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -469,8 +476,8 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-xs">
                       {u.last_login
-                        ? new Date(u.last_login).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')
-                        : '\u2014'}
+                        ? new Date(u.last_login).toLocaleString(locale === 'ar' ? 'ar-KW' : 'en-GB')
+                        : '-'}
                     </td>
                   </tr>
                 ))}

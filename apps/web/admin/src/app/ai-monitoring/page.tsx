@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Card from '@/components/Card';
 import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
@@ -21,19 +21,12 @@ interface AIData {
 
 export default function AIMonitoringPage() {
   const { t, dir } = useI18n();
-  const [data, setData] = useState<AIData | null>(null);
-  const [error, setError] = useState(false);
+  const { data, isError, refetch } = useQuery<AIData>({
+    queryKey: ['ai-monitoring'],
+    queryFn: () => api.getAIMonitoring() as Promise<AIData>,
+  });
 
-  const loadData = useCallback(() => {
-    setError(false);
-    api.getAIMonitoring()
-      .then((d) => setData(d as AIData))
-      .catch(() => setError(true));
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  if (error) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={loadData} retryLabel={t('common.retry')} />;
+  if (isError) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={() => refetch()} retryLabel={t('common.retry')} />;
   if (!data) return <SkeletonPage />;
 
   return (

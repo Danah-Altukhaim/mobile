@@ -149,13 +149,13 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold mb-6">{t('settings.title')}</h1>
 
       {saved && (
-        <div className="bg-oasis-50 border border-oasis-200 rounded-lg p-4 mb-6">
+        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-4 mb-6">
           <p className="text-oasis-700 font-medium">{t('settings.savedSuccess')}</p>
         </div>
       )}
 
       {error && (
-        <div className="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
+        <div role="alert" className="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
           <p className="text-danger-700 font-medium">{error}</p>
         </div>
       )}

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @source "../../";
 
-/* CCK Brand — Canadian College of Kuwait
+/* CCK Brand - Canadian College of Kuwait
  * Tokens extracted from cck.edu.kw (see /CCK_BRAND.md).
  * Primary green #006341, lime accent #76B82A, red #e20613.
  * Gotham is proprietary → Montserrat is used as the geometric substitute.
@@ -10,9 +10,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Hind:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
 
 @theme {
-  /* ── Primary — CCK Green (rt-primary #006341) ──
+  /* ── Primary - CCK Green (rt-primary #006341) ──
    * Token name kept as `pair-*` so existing Tailwind usage
-   * (bg-pair-500, text-pair-600, …) rebrands without edits.
+   * (bg-pair-500, text-pair-600, ...) rebrands without edits.
+   * 500 and 600 intentionally pin to the brand green so both
+   * `bg-pair-500` (indicators) and `bg-pair-600` (buttons) look right.
+   * Hover/darker shades step from 600 → 700 → 800 → 900.
    */
   --color-pair-50:  #F0F9EE;
   --color-pair-100: #E6F2E2;
@@ -25,24 +28,27 @@
   --color-pair-800: #004D32;
   --color-pair-900: #003D27;
 
-  /* ── Secondary — CCK Lime (rt-secondary #76B82A) ── */
+  /* ── Secondary - CCK Lime (rt-secondary #76B82A) ──
+   * 500 = brand. 600/700/800 step monotonically darker so
+   * `hover:bg-oasis-600` and `text-oasis-700` read correctly.
+   */
   --color-oasis-50:  #F0F9E7;
   --color-oasis-100: #E6F2E2;
   --color-oasis-200: #C8E5B0;
   --color-oasis-300: #A8D968;
   --color-oasis-500: #76B82A;
   --color-oasis-600: #5A9020;
-  --color-oasis-700: #3EB75E;
-  --color-oasis-800: #1E6B3E;
+  --color-oasis-700: #467018;
+  --color-oasis-800: #2C4A0F;
 
-  /* ── Warning — CCK orange (color-warning #FF8F3C) ── */
+  /* ── Warning - CCK orange (color-warning #FF8F3C) ── */
   --color-gold-50:  #FFF4E5;
   --color-gold-100: #FFE9CC;
   --color-gold-500: #FF8F3C;
   --color-gold-600: #E67328;
   --color-gold-700: #C05E1F;
 
-  /* ── Danger — CCK Red (rt-red-primary-2 #e20613) ── */
+  /* ── Danger - CCK Red (rt-red-primary-2 #e20613) ── */
   --color-danger-50:  #FCE5E7;
   --color-danger-100: #FBC8CA;
   --color-danger-200: #F79098;
@@ -59,7 +65,7 @@
   --shadow-lg: 0 8px 24px rgba(30,30,30,0.12);
   --shadow-xl: 0 16px 48px rgba(30,30,30,0.16);
 
-  /* ── Border radius — CCK uses very tight 3px on all interactives.
+  /* ── Border radius - CCK uses very tight 3px on all interactives.
    * No pill buttons, no large rounded cards. `full` reserved for avatars.
    * Re-pointing Tailwind's radius scale rebrands `rounded-lg`,
    * `rounded-xl`, `rounded-2xl` usages app-wide.
@@ -68,7 +74,7 @@
   --radius-sm: 3px;
   --radius-md: 3px;
   --radius-lg: 3px;
-  --radius-xl: 4px;
+  --radius-xl: 3px;
   --radius-2xl: 6px;
   --radius-3xl: 8px;
 
@@ -98,10 +104,18 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Arabic containers use Noto Sans Arabic.
  * CCK rule: never add letter-spacing to Arabic (breaks ligatures),
- * line-height bumped so ligatures aren't clipped. */
+ * line-height bumped so ligatures aren't clipped.
+ * `!important` on letter-spacing because Tailwind utilities like
+ * `tracking-wider` have equal specificity and would otherwise win. */
+[dir="rtl"],
+[lang="ar"],
+[dir="rtl"] *,
+[lang="ar"] * {
+  letter-spacing: 0 !important;
+}
+
 [dir="rtl"],
 [lang="ar"] {
   font-family: 'Noto Sans Arabic', 'Cairo', system-ui, sans-serif;
-  letter-spacing: 0;
   line-height: 1.8;
 }

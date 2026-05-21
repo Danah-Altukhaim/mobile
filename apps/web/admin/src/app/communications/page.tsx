@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { COURSES } from '@masari/shared';
 import { useI18n } from '@/lib/i18n';
 import { SkeletonTable } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import ConfirmDialog from '@/components/ConfirmDialog';
+
+const SENT_KEY = ['communications', 'sent'] as const;
 
 interface SentMessage {
   message_id: string;
@@ -22,6 +26,7 @@ const AUDIENCE_KEY: Record<string, string> = {
   at_risk: 'comms.atRisk',
   freshmen: 'comms.freshmen',
   graduating: 'comms.graduating',
+  course_section: 'comms.courseSection',
 };
 
 const AUDIENCE_ESTIMATE: Record<string, number> = {
@@ -29,7 +34,17 @@ const AUDIENCE_ESTIMATE: Record<string, number> = {
   at_risk: 47,
   freshmen: 1100,
   graduating: 650,
+  course_section: 30,
 };
+
+// CCK schools — used for the "filter by major" chips.
+const CCK_SCHOOLS = [
+  'Business',
+  'Advanced Technology & Applied Sciences',
+  'Foundations & General Education',
+];
+
+const SECTION_LETTERS = ['A', 'B', 'C', 'D'];
 
 export default function CommunicationsPage() {
   const { t, locale, isRTL } = useI18n();
@@ -42,6 +57,8 @@ export default function CommunicationsPage() {
     target_audience: 'all_students',
     target_majors: [] as string[],
     target_years: [] as string[],
+    target_course: '',
+    target_section: '',
     channels: ['push', 'email'],
     scheduled_at: '',
   });
@@ -51,17 +68,11 @@ export default function CommunicationsPage() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   // Sent messages history
-  const [sentMessages, setSentMessages] = useState<SentMessage[] | null>(null);
-  const [sentError, setSentError] = useState(false);
-
-  const loadSent = useCallback(() => {
-    setSentError(false);
-    api.getSentCommunications()
-      .then((d) => setSentMessages(d as SentMessage[]))
-      .catch(() => setSentError(true));
-  }, []);
-
-  useEffect(() => { loadSent(); }, [loadSent]);
+  const qc = useQueryClient();
+  const { data: sentMessages, isError: sentError, isLoading: sentLoading } = useQuery<SentMessage[]>({
+    queryKey: SENT_KEY,
+    queryFn: () => api.getSentCommunications() as Promise<SentMessage[]>,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +97,7 @@ export default function CommunicationsPage() {
         sent_at: new Date().toISOString(),
         channels: form.channels,
       };
-      setSentMessages((prev) => (prev ? [newEntry, ...prev] : [newEntry]));
+      qc.setQueryData<SentMessage[]>(SENT_KEY, (prev) => (prev ? [newEntry, ...prev] : [newEntry]));
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -115,16 +126,16 @@ export default function CommunicationsPage() {
       <h1 className="text-2xl font-bold mb-6">{t('comms.title')}</h1>
 
       {result && (
-        <div className="bg-oasis-50 border border-oasis-200 rounded-lg p-4 mb-6">
+        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-4 mb-6">
           <p className="text-oasis-700 font-medium">{t('comms.messageQueued')}</p>
           <p className="text-sm text-oasis-600">
-            {t('comms.messageId', { value: result.message_id })} — {t('comms.recipients', { value: result.recipients_count })}
+            {t('comms.messageId', { value: result.message_id })} - {t('comms.recipients', { value: result.recipients_count })}
           </p>
         </div>
       )}
 
       {sendError && (
-        <div className="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
+        <div role="alert" className="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
           <p className="text-danger-700 font-medium">{t('common.error')}</p>
           <p className="text-sm text-danger-600">{sendError}</p>
         </div>
@@ -194,14 +205,47 @@ export default function CommunicationsPage() {
             <option value="at_risk">{t('comms.atRisk')}</option>
             <option value="freshmen">{t('comms.freshmen')}</option>
             <option value="graduating">{t('comms.graduating')}</option>
+            <option value="course_section">{t('comms.courseSection')}</option>
           </select>
+
+          {/* Per-course-section targeting — academic staff messaging one class */}
+          {form.target_audience === 'course_section' && (
+            <div className="mt-3 flex flex-wrap gap-3">
+              <select
+                value={form.target_course}
+                onChange={(e) => setForm({ ...form, target_course: e.target.value })}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[260px]"
+                required
+              >
+                <option value="">{t('comms.selectCourse')}</option>
+                {COURSES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} — {c.name_en}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={form.target_section}
+                onChange={(e) => setForm({ ...form, target_section: e.target.value })}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                required
+              >
+                <option value="">{t('comms.selectSection')}</option>
+                {SECTION_LETTERS.map((s) => (
+                  <option key={s} value={s}>
+                    {t('comms.section')} {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">{t('comms.filterByMajor')}</label>
             <div className="flex flex-wrap gap-2">
-              {['Computer Science', 'Engineering', 'Business', 'Science', 'Arts'].map((major) => (
+              {CCK_SCHOOLS.map((major) => (
                 <button
                   key={major}
                   type="button"
@@ -312,7 +356,7 @@ export default function CommunicationsPage() {
           <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
             <p className="text-danger-700 font-medium">{t('common.error')}</p>
           </div>
-        ) : !sentMessages ? (
+        ) : sentLoading || !sentMessages ? (
           <SkeletonTable rows={3} cols={5} />
         ) : sentMessages.length === 0 ? (
           <EmptyState title={t('comms.noSent')} />
@@ -323,7 +367,7 @@ export default function CommunicationsPage() {
                 <tr className="text-gray-500 border-b bg-gray-50">
                   <th className="px-6 py-3 text-start">{locale === 'ar' ? t('comms.subjectAr') : t('comms.subjectEn')}</th>
                   <th className="px-6 py-3 text-start">{t('comms.targetAudience')}</th>
-                  <th className="px-6 py-3 text-start">{t('comms.recipients', { value: '#' }).replace('#', '').trim()}</th>
+                  <th className="px-6 py-3 text-start">{t('comms.recipientsLabel')}</th>
                   <th className="px-6 py-3 text-start">{t('comms.channels')}</th>
                   <th className="px-6 py-3 text-start">{t('common.date')}</th>
                 </tr>
@@ -349,7 +393,7 @@ export default function CommunicationsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-xs">
-                      {new Date(msg.sent_at).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
+                      {new Date(msg.sent_at).toLocaleString(locale === 'ar' ? 'ar-KW' : 'en-GB')}
                     </td>
                   </tr>
                 ))}

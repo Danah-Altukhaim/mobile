@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { SkeletonTable } from '@/components/Skeleton';
@@ -24,21 +25,16 @@ const PAGE_SIZE = 10;
 
 export default function AuditLogPage() {
   const { t, isRTL } = useI18n();
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [error, setError] = useState(false);
+  const { data: logs = [], isError, isLoading, refetch } = useQuery<LogEntry[]>({
+    queryKey: ['audit-log'],
+    queryFn: () => api.getAuditLog() as Promise<LogEntry[]>,
+  });
   const [filter, setFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('timestamp');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(1);
-
-  const loadData = useCallback(() => {
-    setError(false);
-    api.getAuditLog().then(d => setLogs(d as LogEntry[])).catch(() => setError(true));
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -99,15 +95,15 @@ export default function AuditLogPage() {
 
   const hasActiveFilters = filter || dateFrom || dateTo;
 
-  if (logs.length === 0 && !error) return <SkeletonTable rows={8} cols={5} />;
-  if (error) return (
+  if (isError) return (
     <ErrorState
       title={t('common.error')}
       description={t('common.errorDescription')}
-      onRetry={loadData}
+      onRetry={() => refetch()}
       retryLabel={t('common.retry')}
     />
   );
+  if (isLoading) return <SkeletonTable rows={8} cols={5} />;
 
   const columns: { key: SortKey; label: string }[] = [
     { key: 'timestamp', label: t('audit.timestamp') },

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
 import { api } from '@/lib/api';
@@ -34,19 +34,13 @@ export default function StudentProfilePage() {
   const { t, locale } = useI18n();
   const isAr = locale === 'ar';
 
-  const [student, setStudent] = useState<StudentProfile | null>(null);
-  const [error, setError] = useState(false);
+  const studentId = params.id as string;
+  const { data: student, isError, refetch } = useQuery<StudentProfile>({
+    queryKey: ['retention', 'profile', studentId],
+    queryFn: () => api.getStudentProfile(studentId) as Promise<StudentProfile>,
+  });
 
-  const loadData = useCallback(() => {
-    setError(false);
-    api.getStudentProfile(params.id as string)
-      .then((d) => setStudent(d as StudentProfile))
-      .catch(() => setError(true));
-  }, [params.id]);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  if (error) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={loadData} retryLabel={t('common.retry')} />;
+  if (isError) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={() => refetch()} retryLabel={t('common.retry')} />;
   if (!student) return <SkeletonPage />;
 
   const riskColor = student.risk_level === 'high' ? 'bg-danger-100 text-danger-700' : 'bg-gold-100 text-gold-700';

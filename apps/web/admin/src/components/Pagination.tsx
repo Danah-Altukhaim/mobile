@@ -18,9 +18,9 @@ export default function Pagination({ page, totalPages, totalItems, pageSize, onP
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between mt-4 px-2">
+    <nav aria-label="Pagination" className="flex items-center justify-between mt-4 px-2">
       <p className="text-sm text-gray-500">
-        {t('common.showing')} {from} {t('common.to')} {to} {t('common.of')} {totalItems} {t('common.results')}
+        {t('common.paginationRange', { from, to, total: totalItems })}
       </p>
       <div className="flex items-center gap-2">
         <button
@@ -41,12 +41,14 @@ export default function Pagination({ page, totalPages, totalItems, pageSize, onP
           } else {
             pageNum = page - 2 + i;
           }
+          const isCurrent = pageNum === page;
           return (
             <button
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
+              aria-current={isCurrent ? 'page' : undefined}
               className={`w-8 h-8 text-sm rounded-lg ${
-                pageNum === page
+                isCurrent
                   ? 'bg-pair-600 text-white'
                   : 'border border-gray-300 hover:bg-gray-50'
               }`}
@@ -63,6 +65,6 @@ export default function Pagination({ page, totalPages, totalItems, pageSize, onP
           {t('common.next')}
         </button>
       </div>
-    </div>
+    </nav>
   );
 }

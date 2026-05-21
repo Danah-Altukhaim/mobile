@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Card from '@/components/Card';
 import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
@@ -9,6 +10,11 @@ import Pagination from '@/components/Pagination';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+
+const RETENTION_KEY = ['retention', 'overview'] as const;
+const AT_RISK_KEY = ['retention', 'atRisk'] as const;
+const REMINDERS_KEY = ['retention', 'reminders'] as const;
+const RECALC_KEY = ['retention', 'recalc'] as const;
 
 interface FollowUpReminder {
   id: string;
@@ -54,36 +60,48 @@ const PAGE_SIZE = 5;
 export default function RetentionPage() {
   const { t, locale } = useI18n();
   const isAr = locale === 'ar';
+  const qc = useQueryClient();
 
-  const [retention, setRetention] = useState<RetentionData | null>(null);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [reminders, setReminders] = useState<FollowUpReminder[]>([]);
-  const [recalcInfo, setRecalcInfo] = useState<RiskRecalcInfo | null>(null);
-  const [error, setError] = useState(false);
+  const retentionQ = useQuery<RetentionData>({
+    queryKey: RETENTION_KEY,
+    queryFn: () => api.getRetention() as Promise<RetentionData>,
+  });
+  const studentsQ = useQuery<Student[]>({
+    queryKey: AT_RISK_KEY,
+    queryFn: async () => {
+      const d = await api.getAtRiskStudents();
+      return (d as Student[]).slice().sort((a, b) => b.risk_score - a.risk_score);
+    },
+  });
+  const remindersQ = useQuery<FollowUpReminder[]>({
+    queryKey: REMINDERS_KEY,
+    queryFn: () => api.getFollowUpReminders() as Promise<FollowUpReminder[]>,
+  });
+  const recalcQ = useQuery<RiskRecalcInfo>({
+    queryKey: RECALC_KEY,
+    queryFn: () => api.getRiskRecalcInfo() as Promise<RiskRecalcInfo>,
+  });
+
+  const retention = retentionQ.data ?? null;
+  const students = studentsQ.data ?? [];
+  const reminders = remindersQ.data ?? [];
+  const recalcInfo = recalcQ.data ?? null;
+  const isError = retentionQ.isError || studentsQ.isError || remindersQ.isError || recalcQ.isError;
+  const refetchAll = () => {
+    retentionQ.refetch();
+    studentsQ.refetch();
+    remindersQ.refetch();
+    recalcQ.refetch();
+  };
+
   const [intervening, setIntervening] = useState<string | null>(null);
   const [interventionActions, setInterventionActions] = useState<Record<string, string>>({});
   const [outcomes, setOutcomes] = useState<Record<string, string>>({});
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  // ConfirmDialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingIntervention, setPendingIntervention] = useState<string | null>(null);
-
-  const loadData = useCallback(() => {
-    setError(false);
-    Promise.all([
-      api.getRetention().then((d) => setRetention(d as RetentionData)),
-      api.getAtRiskStudents().then((d) => {
-        const sorted = (d as Student[]).sort((a, b) => b.risk_score - a.risk_score);
-        setStudents(sorted);
-      }),
-      api.getFollowUpReminders().then((d) => setReminders(d as FollowUpReminder[])),
-      api.getRiskRecalcInfo().then((d) => setRecalcInfo(d as RiskRecalcInfo)),
-    ]).catch(() => setError(true));
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
 
   const INTERVENTION_TYPES = useMemo(() => [
     { value: 'send_message', label: t('retention.sendMessage') },
@@ -119,7 +137,9 @@ export default function RetentionPage() {
 
   const handleDismissReminder = async (id: string) => {
     await api.dismissReminder(id);
-    setReminders((prev) => prev.filter((r) => r.id !== id));
+    qc.setQueryData<FollowUpReminder[]>(REMINDERS_KEY, (prev) =>
+      prev?.filter((r) => r.id !== id) ?? prev,
+    );
   };
 
   const handleOutcomeChange = async (id: string, outcome: string) => {
@@ -131,7 +151,7 @@ export default function RetentionPage() {
     }
   };
 
-  if (error) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={loadData} retryLabel={t('common.retry')} />;
+  if (isError) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={refetchAll} retryLabel={t('common.retry')} />;
   if (!retention) return <SkeletonPage />;
 
   const riskColor = (level: string) => {
@@ -164,7 +184,7 @@ export default function RetentionPage() {
 
       {/* Success banner */}
       {successBanner && (
-        <div className="mb-4 px-4 py-3 bg-oasis-50 border border-oasis-200 text-oasis-800 text-sm rounded-lg">
+        <div role="status" aria-live="polite" className="mb-4 px-4 py-3 bg-oasis-50 border border-oasis-200 text-oasis-800 text-sm rounded-lg">
           {successBanner}
         </div>
       )}
@@ -182,10 +202,10 @@ export default function RetentionPage() {
           <div className="flex items-center gap-4">
             <span className="font-medium text-gray-700">{t('retention.riskRecalc')}</span>
             <span className="text-gray-500">
-              {t('retention.lastCalculated')}: {new Date(recalcInfo.last_calculated).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              {t('retention.lastCalculated')}: {new Date(recalcInfo.last_calculated).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
             <span className="text-gray-500">
-              {t('retention.nextScheduled')}: {new Date(recalcInfo.next_scheduled).toLocaleDateString(isAr ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' })}
+              {t('retention.nextScheduled')}: {new Date(recalcInfo.next_scheduled).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB', { month: 'short', day: 'numeric' })}
             </span>
           </div>
           <span className="text-xs text-gray-400">{t('retention.modelVersion')} {recalcInfo.model_version} &middot; {t('retention.recalcWeekly')}</span>
@@ -208,13 +228,13 @@ export default function RetentionPage() {
                       {isAr ? r.student_name_ar : r.student_name_en}
                     </Link>
                     <p className="text-xs text-gray-500">
-                      {r.action} &middot; {t('retention.interventionOn', { value: new Date(r.intervention_date).toLocaleDateString(isAr ? 'ar-SA' : 'en-US') })}
+                      {r.action} &middot; {t('retention.interventionOn', { value: new Date(r.intervention_date).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB') })}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-gray-500">
-                    {t('retention.dueDate', { value: new Date(r.due_date).toLocaleDateString(isAr ? 'ar-SA' : 'en-US') })}
+                    {t('retention.dueDate', { value: new Date(r.due_date).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB') })}
                   </span>
                   <button
                     onClick={() => handleDismissReminder(r.id)}
@@ -297,7 +317,7 @@ export default function RetentionPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskColor(s.risk_level)}`}>
-                    {riskLabel(s.risk_level)} — {Math.round(s.risk_score * 100)}
+                    {riskLabel(s.risk_level)} - {Math.round(s.risk_score * 100)}
                   </span>
                   <span className="text-sm text-gray-500">{t('retention.gpa', { value: String(s.gpa) })}</span>
                 </div>
@@ -312,7 +332,7 @@ export default function RetentionPage() {
               </ul>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">
-                  {t('retention.lastActive', { value: new Date(s.last_active).toLocaleDateString(isAr ? 'ar-SA' : 'en-US') })}
+                  {t('retention.lastActive', { value: new Date(s.last_active).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB') })}
                 </span>
                 <div className="flex items-center gap-2">
                   <select

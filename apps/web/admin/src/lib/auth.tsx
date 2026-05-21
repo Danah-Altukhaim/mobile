@@ -19,17 +19,17 @@ interface AuthContextType {
 }
 
 const MOCK_CREDENTIALS: Record<string, { password: string; user: AdminUser }> = {
-  'dean@pu.edu.kw': {
+  'dean@cck.edu.kw': {
     password: 'admin123',
-    user: { id: 'admin_001', email: 'dean@pu.edu.kw', name_en: 'Dr. Abdullah Al-Faisal', name_ar: 'د. عبدالله الفيصل', role: 'super_admin' },
+    user: { id: 'admin_001', email: 'dean@cck.edu.kw', name_en: 'Dr. Abdullah Al-Faisal', name_ar: 'د. عبدالله الفيصل', role: 'super_admin' },
   },
-  'registrar@pu.edu.kw': {
+  'registrar@cck.edu.kw': {
     password: 'admin123',
-    user: { id: 'admin_002', email: 'registrar@pu.edu.kw', name_en: 'Noura Al-Shahri', name_ar: 'نورة الشهري', role: 'university_admin' },
+    user: { id: 'admin_002', email: 'registrar@cck.edu.kw', name_en: 'Noura Al-Shahri', name_ar: 'نورة الشهري', role: 'registration_staff' },
   },
-  'advisor.cs@pu.edu.kw': {
+  'admission@cck.edu.kw': {
     password: 'admin123',
-    user: { id: 'admin_003', email: 'advisor.cs@pu.edu.kw', name_en: 'Ahmed Al-Ghamdi', name_ar: 'أحمد الغامدي', role: 'advisor' },
+    user: { id: 'admin_003', email: 'admission@cck.edu.kw', name_en: 'Ahmed Al-Ghamdi', name_ar: 'أحمد الغامدي', role: 'admission_staff' },
   },
 };
 
@@ -40,12 +40,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('masari-admin-session');
+    const stored = localStorage.getItem('cck-admin-session');
     if (stored) {
       try {
         setUser(JSON.parse(stored));
       } catch {
-        localStorage.removeItem('masari-admin-session');
+        localStorage.removeItem('cck-admin-session');
       }
     }
     setIsLoading(false);
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cred = MOCK_CREDENTIALS[email];
     if (cred && cred.password === password) {
       setUser(cred.user);
-      localStorage.setItem('masari-admin-session', JSON.stringify(cred.user));
+      localStorage.setItem('cck-admin-session', JSON.stringify(cred.user));
       return true;
     }
     return false;
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('masari-admin-session');
+    localStorage.removeItem('cck-admin-session');
   }, []);
 
   return (

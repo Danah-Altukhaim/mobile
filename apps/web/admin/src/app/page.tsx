@@ -1,240 +1,188 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import Card from '@/components/Card';
 import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
+import EmptyState from '@/components/EmptyState';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
-interface EngagementData {
-  daily_active_users: number;
-  monthly_active_users: number;
-  avg_session_duration_minutes: number;
-  feature_usage_heatmap: Record<string, { usage_count: number; label_en: string; label_ar: string }>;
-  engagement_by_cohort: { cohort: string; active_users: number; avg_session_min: number }[];
-  engagement_by_major: { major_en: string; major_ar: string; active_users: number; avg_session_min: number }[];
-  engagement_by_year: { year: string; year_ar: string; active_users: number; avg_session_min: number }[];
-  peak_hours: { hour: number; users: number; label_en: string }[];
-  period: { start: string; end: string };
+interface QueueRow {
+  key: string;
+  label_en: string;
+  label_ar: string;
+  href: string;
+  open: number;
+  in_progress: number;
+  completed: number;
 }
 
-interface HeatmapData {
-  features: string[];
-  features_ar: string[];
-  hours: string[];
-  hours_ar: string[];
-  data: number[][];
+interface AlertRow {
+  id: string;
+  type: string;
+  student_name_en: string;
+  student_name_ar: string;
+  age_days: number;
+  overdue: boolean;
 }
 
-export default function EngagementPage() {
-  const { t, locale, dir } = useI18n();
-  const [data, setData] = useState<EngagementData | null>(null);
-  const [heatmap, setHeatmap] = useState<HeatmapData | null>(null);
-  const [error, setError] = useState(false);
+interface ActivityRow {
+  id: string;
+  label_en: string;
+  label_ar: string;
+  timestamp: string;
+}
 
-  const loadData = useCallback(() => {
-    setError(false);
-    Promise.all([
-      api.getEngagement().then((d) => setData(d as EngagementData)),
-      api.getFeatureHeatmap().then((d) => setHeatmap(d as HeatmapData)),
-    ]).catch(() => setError(true));
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  if (error) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={loadData} retryLabel={t('common.retry')} />;
-  if (!data) return <SkeletonPage />;
-
-  const maxPeakUsers = Math.max(...data.peak_hours.map((p) => p.users));
-
-  // Heatmap helpers
-  const heatmapMax = heatmap ? Math.max(...heatmap.data.flat()) : 1;
-  const getHeatColor = (value: number) => {
-    const intensity = value / heatmapMax;
-    if (intensity < 0.2) return 'bg-pair-50 text-gray-500';
-    if (intensity < 0.4) return 'bg-pair-100 text-pair-700';
-    if (intensity < 0.6) return 'bg-pair-200 text-pair-800';
-    if (intensity < 0.8) return 'bg-pair-400 text-white';
-    return 'bg-pair-600 text-white';
+interface Dashboard {
+  stats: {
+    assigned_to_me: number;
+    open: number;
+    due_today: number;
+    overdue: number;
+    completed_this_week: number;
   };
+  queues: QueueRow[];
+  alerts: AlertRow[];
+  recent_activity: ActivityRow[];
+}
+
+export default function StaffDashboardPage() {
+  const { t, locale, dir } = useI18n();
+  const { data, isError, refetch } = useQuery<Dashboard>({
+    queryKey: ['staff', 'dashboard'],
+    queryFn: () => api.getStaffDashboard() as Promise<Dashboard>,
+  });
+
+  if (isError) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={() => refetch()} retryLabel={t('common.retry')} />;
+  if (!data) return <SkeletonPage stats={5} />;
+
+  const fmtDate = (iso: string) => new Date(iso).toLocaleString(locale === 'ar' ? 'ar-KW' : 'en-GB', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
 
   return (
     <div dir={dir}>
-      <h1 className="text-2xl font-bold mb-6">{t('engagement.title')}</h1>
+      <header className="mb-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-pair-600">
+          {t('brand.institution')}
+        </p>
+        <div className="flex items-end justify-between gap-4 mt-1.5">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-[#222] truncate">{t('dashboard.title')}</h1>
+            <p className="text-sm text-[#737477] mt-1">{t('dashboard.subtitle')}</p>
+          </div>
+          <p className="hidden md:block text-xs italic text-[#737477] max-w-[14rem] text-end shrink-0">
+            {t('brand.tagline')}
+          </p>
+        </div>
+        <div className="mt-3 h-0.5 bg-pair-600/30" />
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Card title={t('engagement.dau')} value={data.daily_active_users.toLocaleString()} />
-        <Card title={t('engagement.mau')} value={data.monthly_active_users.toLocaleString()} />
-        <Card
-          title={t('engagement.avgSession')}
-          value={t('engagement.min', { value: String(data.avg_session_duration_minutes) })}
-        />
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <Card title={t('dashboard.assignedToMe')} value={data.stats.assigned_to_me.toString()} />
+        <Card title={t('dashboard.openItems')} value={data.stats.open.toString()} />
+        <Card title={t('dashboard.dueToday')} value={data.stats.due_today.toString()} />
+        <Card title={t('dashboard.overdue')} value={data.stats.overdue.toString()} />
+        <Card title={t('dashboard.completedThisWeek')} value={data.stats.completed_this_week.toString()} />
       </div>
 
-      {/* Feature Usage Heatmap Grid */}
-      {heatmap && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold">{t('engagement.featureHeatmap')}</h2>
-            <p className="text-sm text-gray-500">{t('engagement.heatmapDesc')}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">{t('dashboard.workflowStatus')}</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-sm">
               <thead>
-                <tr>
-                  <th className="text-start pb-2 pe-2 w-32 text-gray-500 font-medium" />
-                  {heatmap.hours.map((h, i) => (
-                    <th key={i} className="pb-2 text-center text-gray-500 font-medium px-0.5">
-                      {locale === 'ar' ? heatmap.hours_ar[i] : h}
-                    </th>
-                  ))}
+                <tr className="text-[#737477] border-b">
+                  <th className="text-start py-2 pe-4">{t('requests.type')}</th>
+                  <th className="text-start py-2 pe-4">{t('dashboard.queueInProgress')}</th>
+                  <th className="text-start py-2 pe-4">{t('dashboard.queuePending')}</th>
+                  <th className="text-start py-2 pe-4">{t('dashboard.queueCompleted')}</th>
+                  <th className="text-end py-2"><span className="sr-only">{t('common.actions')}</span></th>
                 </tr>
               </thead>
               <tbody>
-                {heatmap.data.map((row, fi) => (
-                  <tr key={fi}>
-                    <td className="py-1 pe-2 text-sm text-gray-600 whitespace-nowrap">
-                      {locale === 'ar' ? heatmap.features_ar[fi] : heatmap.features[fi]}
+                {data.queues.map((q) => (
+                  <tr key={q.key} className="border-b border-gray-50 last:border-0">
+                    <td className="py-3 font-medium">{locale === 'ar' ? q.label_ar : q.label_en}</td>
+                    <td className="py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-pair-50 text-pair-700 text-xs font-medium">
+                        {q.in_progress}
+                      </span>
                     </td>
-                    {row.map((val, hi) => (
-                      <td key={hi} className="p-0.5">
-                        <div
-                          className={`rounded h-8 flex items-center justify-center text-[10px] font-medium ${getHeatColor(val)}`}
-                          title={`${val} ${t('engagement.sessions')}`}
-                        >
-                          {val}
-                        </div>
-                      </td>
-                    ))}
+                    <td className="py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-gold-50 text-gold-700 text-xs font-medium">
+                        {q.open - q.in_progress}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-oasis-50 text-oasis-700 text-xs font-medium">
+                        {q.completed}
+                      </span>
+                    </td>
+                    <td className="py-3 text-end">
+                      <Link href={q.href} className="text-pair-600 hover:text-pair-700 text-sm font-medium">
+                        {t('dashboard.openQueue')}
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {/* Legend */}
-          <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
-            <span>{t('engagement.users')}:</span>
-            <div className="flex items-center gap-1">
-              <div className="w-6 h-4 rounded bg-pair-50" />
-              <span>Low</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-6 h-4 rounded bg-pair-200" />
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-6 h-4 rounded bg-pair-400" />
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-6 h-4 rounded bg-pair-600" />
-              <span>High</span>
-            </div>
-          </div>
-        </div>
-      )}
+        </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold mb-4">{t('engagement.byCohort')}</h2>
-          <div className="space-y-3">
-            {data.engagement_by_cohort.map((c) => (
-              <div key={c.cohort} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">{t('engagement.classOf', { value: c.cohort })}</span>
-                <div>
-                  <span className="font-medium">{c.active_users.toLocaleString()}</span>
-                  <span className="text-gray-400 text-xs ms-2">
-                    {t('engagement.avgMin', { value: String(c.avg_session_min) })}
+        <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold mb-4">{t('dashboard.deadlineAlerts')}</h2>
+          {data.alerts.length === 0 ? (
+            <EmptyState title={t('dashboard.noAlerts')} />
+          ) : (
+            <ul className="space-y-3">
+              {data.alerts.map((a) => (
+                <li key={a.id} className="flex items-start justify-between gap-2 text-sm">
+                  <div className="min-w-0">
+                    <Link href={`/requests/${a.id}`} className="font-medium text-[#222] hover:text-pair-600 truncate block">
+                      {a.id}
+                    </Link>
+                    <p className="text-xs text-[#737477] truncate">
+                      {locale === 'ar' ? a.student_name_ar : a.student_name_en} · {t(`requestType.${a.type}`)}
+                    </p>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded shrink-0 ${
+                    a.overdue ? 'bg-danger-50 text-danger-700' : 'bg-gold-50 text-gold-700'
+                  }`}>
+                    {a.overdue
+                      ? t('dashboard.daysOverdue', { value: a.age_days - 5 })
+                      : t('dashboard.dueIn', { value: `${5 - a.age_days}d` })}
                   </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold mb-4">{t('engagement.byMajor')}</h2>
-          <div className="space-y-3">
-            {data.engagement_by_major.map((m) => (
-              <div key={m.major_en} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">
-                  {locale === 'ar' ? m.major_ar : m.major_en}
-                </span>
-                <div>
-                  <span className="font-medium">{m.active_users.toLocaleString()}</span>
-                  <span className="text-gray-400 text-xs ms-2">
-                    {t('engagement.mSuffix', { value: String(m.avg_session_min) })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold mb-4">{t('engagement.byYear')}</h2>
-          <div className="space-y-3">
-            {data.engagement_by_year.map((y) => (
-              <div key={y.year} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">
-                  {locale === 'ar' ? y.year_ar : y.year}
-                </span>
-                <div>
-                  <span className="font-medium">{y.active_users.toLocaleString()}</span>
-                  <span className="text-gray-400 text-xs ms-2">
-                    {t('engagement.mSuffix', { value: String(y.avg_session_min) })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-        <h2 className="text-lg font-semibold mb-4">{t('engagement.peakHours')}</h2>
-        <div className="flex items-end gap-3" style={{ height: 200 }}>
-          {data.peak_hours.map((p) => {
-            const heightPercent = maxPeakUsers > 0 ? (p.users / maxPeakUsers) * 100 : 0;
-            return (
-              <div key={p.hour} className="flex-1 flex flex-col items-center justify-end h-full">
-                <span className="text-xs font-medium text-pair-700 mb-1">
-                  {p.users.toLocaleString()}
-                </span>
-                <div
-                  className="w-full bg-pair-500 rounded-t-md transition-all"
-                  style={{ height: `${heightPercent}%`, minHeight: 4 }}
-                />
-                <span className="text-xs text-gray-500 mt-2">{p.label_en}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
-        <h2 className="text-lg font-semibold mb-4">{t('engagement.trend')}</h2>
-        <div className="flex items-end gap-2" style={{ height: 120 }}>
-          {data.peak_hours.map((p) => {
-            const heightPercent = maxPeakUsers > 0 ? (p.users / maxPeakUsers) * 100 : 0;
-            return (
-              <div key={`trend-${p.hour}`} className="flex-1 flex flex-col items-center justify-end h-full">
-                <div
-                  className="w-full bg-pair-200 rounded-t-sm"
-                  style={{ height: `${heightPercent}%`, minHeight: 2 }}
-                />
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex justify-between mt-2">
-          <span className="text-xs text-gray-400">{data.peak_hours[0]?.label_en}</span>
-          <span className="text-xs text-gray-400">{data.peak_hours[data.peak_hours.length - 1]?.label_en}</span>
-        </div>
-      </div>
-
-      <p className="text-xs text-gray-400 mt-4">
-        {t('common.period')}: {data.period.start} — {data.period.end}
-      </p>
+      <section className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold mb-4">{t('dashboard.recentActivity')}</h2>
+        {data.recent_activity.length === 0 ? (
+          <EmptyState title={t('dashboard.noActivity')} />
+        ) : (
+          <ul className="space-y-3">
+            {data.recent_activity.map((a) => (
+              <li key={a.id} className="flex items-start gap-3 text-sm">
+                <span className="w-1.5 h-1.5 mt-2 rounded-full bg-pair-500 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[#222]">{locale === 'ar' ? a.label_ar : a.label_en}</p>
+                  <p className="text-xs text-[#737477] mt-0.5">{fmtDate(a.timestamp)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
