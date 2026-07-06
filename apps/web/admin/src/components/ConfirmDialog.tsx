@@ -64,15 +64,16 @@ export default function ConfirmDialog({
       aria-describedby={descId}
       className="fixed inset-0 z-50 flex items-center justify-center"
     >
-      <div className="absolute inset-0 bg-black/40" onClick={onCancel} aria-hidden />
-      <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 p-6 max-w-md w-full mx-4">
-        <h3 id={titleId} className="text-lg font-semibold mb-2">{title}</h3>
-        <p id={descId} className="text-sm text-gray-600 mb-6">{message}</p>
+      <div className="absolute inset-0 bg-pine-900/50 backdrop-blur-[1px]" onClick={onCancel} aria-hidden />
+      <div className="relative cck-card shadow-xl p-6 max-w-md w-full mx-4 overflow-hidden">
+        <span aria-hidden className={`absolute inset-x-0 top-0 h-1 ${variant === 'danger' ? 'bg-danger-600' : 'bg-pair-600'}`} />
+        <h3 id={titleId} className="cck-title text-lg mb-2">{title}</h3>
+        <p id={descId} className="text-sm text-body mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-pair-500"
+            className="btn btn-outline"
           >
             {cancelLabel || t('common.cancel')}
           </button>
@@ -80,11 +81,7 @@ export default function ConfirmDialog({
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm text-white rounded-lg focus:outline-none focus:ring-2 ${
-              variant === 'danger'
-                ? 'bg-danger-600 hover:bg-danger-700 focus:ring-danger-500'
-                : 'bg-pair-600 hover:bg-pair-700 focus:ring-pair-500'
-            }`}
+            className={`btn ${variant === 'danger' ? 'btn-danger' : 'btn-primary'}`}
           >
             {confirmLabel || t('common.confirm')}
           </button>

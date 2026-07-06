@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import PageHeader from '@/components/PageHeader';
 import { api } from '@/lib/api';
+import {
+  CCK_TRANSFER_POLICY, CCK_GRADING_POLICY,
+  CCK_GRADING_SCHEME, CCK_ACADEMIC_STANDING,
+  CCK_EQUIVALENCY_RULES,
+} from '@/lib/cckPolicies';
 import { useI18n } from '@/lib/i18n';
 
 const TABS = [
@@ -9,6 +15,7 @@ const TABS = [
   { key: 'general', labelKey: 'settings.general' },
   { key: 'security', labelKey: 'settings.security' },
   { key: 'sso', labelKey: 'settings.sso' },
+  { key: 'policies', labelKey: 'settings.policies' },
 ];
 
 const MODULES = [
@@ -43,7 +50,7 @@ function getContrastRatio(hex1: string, hex2: string): number {
 }
 
 export default function SettingsPage() {
-  const { t, isRTL } = useI18n();
+  const { t, locale, isRTL } = useI18n();
   const [activeTab, setActiveTab] = useState('branding');
 
   // Branding state
@@ -146,22 +153,22 @@ export default function SettingsPage() {
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
-      <h1 className="text-2xl font-bold mb-6">{t('settings.title')}</h1>
+      <PageHeader title={t('settings.title')} />
 
       {saved && (
-        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-4 mb-6">
-          <p className="text-oasis-700 font-medium">{t('settings.savedSuccess')}</p>
+        <div role="status" aria-live="polite" className="bg-pair-50 border border-pair-200 rounded-sm p-4 mb-6">
+          <p className="text-pair-700 font-medium">{t('settings.savedSuccess')}</p>
         </div>
       )}
 
       {error && (
-        <div role="alert" className="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
+        <div role="alert" className="bg-danger-50 border border-danger-200 rounded-sm p-4 mb-6">
           <p className="text-danger-700 font-medium">{error}</p>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-line mb-6">
         <div className="flex gap-6">
           {TABS.map((tab) => (
             <button
@@ -170,7 +177,7 @@ export default function SettingsPage() {
               className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.key
                   ? 'border-pair-600 text-pair-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-muted hover:text-body hover:border-line-strong'
               }`}
             >
               {t(tab.labelKey)}
@@ -183,81 +190,81 @@ export default function SettingsPage() {
         {/* Branding Tab */}
         {activeTab === 'branding' && (
           <div className="space-y-8">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+            <div className="cck-card p-6 space-y-6">
               <h2 className="text-lg font-semibold">{t('settings.branding')}</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.universityNameEn')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.universityNameEn')}</label>
                   <input
                     type="text"
                     value={form.university_name_en}
                     onChange={(e) => setForm({ ...form, university_name_en: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.universityNameAr')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.universityNameAr')}</label>
                   <input
                     type="text"
                     dir="rtl"
                     value={form.university_name_ar}
                     onChange={(e) => setForm({ ...form, university_name_ar: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.primaryColor')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.primaryColor')}</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
                       value={form.primary_color}
                       onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-                      className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                      className="w-10 h-10 rounded-sm border border-line-strong cursor-pointer"
                     />
                     <input
                       type="text"
                       value={form.primary_color}
                       onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                      className="flex-1 border border-line-strong rounded-sm px-3 py-2 text-sm font-mono"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.secondaryColor')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.secondaryColor')}</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
                       value={form.secondary_color}
                       onChange={(e) => setForm({ ...form, secondary_color: e.target.value })}
-                      className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                      className="w-10 h-10 rounded-sm border border-line-strong cursor-pointer"
                     />
                     <input
                       type="text"
                       value={form.secondary_color}
                       onChange={(e) => setForm({ ...form, secondary_color: e.target.value })}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                      className="flex-1 border border-line-strong rounded-sm px-3 py-2 text-sm font-mono"
                     />
                   </div>
                 </div>
               </div>
 
               {showContrastWarning && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="text-amber-700 text-sm font-medium">{t('settings.contrastWarning')}</p>
+                <div className="bg-danger-50 border border-danger-200 rounded-sm p-4">
+                  <p className="text-danger-700 text-sm font-medium">{t('settings.contrastWarning')}</p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.fontFamily')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.fontFamily')}</label>
                   <select
                     value={form.font_family}
                     onChange={(e) => setForm({ ...form, font_family: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   >
                     {['Hind', 'Montserrat', 'Noto Sans Arabic', 'Cairo', 'Outfit', 'Tajawal', 'IBM Plex Sans Arabic', 'Inter', 'Roboto'].map((f) => (
                       <option key={f} value={f}>{f}</option>
@@ -265,25 +272,25 @@ export default function SettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.logoUrl')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.logoUrl')}</label>
                   <input
                     type="url"
                     value={form.logo_url}
                     onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
                     placeholder="https://cdn.example.com/logo.png"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
               </div>
 
-              <div className="border border-gray-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-gray-700 mb-3">{t('settings.preview')}</p>
+              <div className="border border-line rounded-sm p-4">
+                <p className="text-sm font-medium text-body mb-3">{t('settings.preview')}</p>
                 <div
-                  className="flex items-center gap-4 p-4 rounded-lg"
+                  className="flex items-center gap-4 p-4 rounded-sm"
                   style={{ backgroundColor: form.primary_color, fontFamily: form.font_family }}
                 >
                   <div
-                    className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-xs font-bold"
+                    className="w-10 h-10 bg-white rounded-sm flex items-center justify-center text-xs font-bold"
                     style={{ color: form.primary_color }}
                   >
                     Logo
@@ -296,13 +303,13 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="cck-card p-6">
               <h2 className="text-lg font-semibold mb-4">{t('settings.enabledModules')}</h2>
-              <p className="text-sm text-gray-500 mb-4">{t('settings.enabledModulesDesc')}</p>
+              <p className="text-sm text-muted mb-4">{t('settings.enabledModulesDesc')}</p>
 
               {showNotificationWarning && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-                  <p className="text-amber-700 text-sm font-medium">{t('settings.notificationDependency')}</p>
+                <div className="bg-danger-50 border border-danger-200 rounded-sm p-4 mb-4">
+                  <p className="text-danger-700 text-sm font-medium">{t('settings.notificationDependency')}</p>
                 </div>
               )}
 
@@ -310,37 +317,37 @@ export default function SettingsPage() {
                 {MODULES.map((m) => (
                   <label
                     key={m.key}
-                    className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
-                      enabledModules[m.key] ? 'border-pair-300 bg-pair-50' : 'border-gray-200 bg-gray-50'
+                    className={`flex items-center justify-between p-4 rounded-sm border cursor-pointer transition-colors ${
+                      enabledModules[m.key] ? 'border-pair-300 bg-pair-50' : 'border-line bg-canvas'
                     }`}
                   >
                     <div>
                       <p className="text-sm font-medium">{t('module.' + m.key)}</p>
-                      <p className="text-xs text-gray-500">{t('module.' + m.key + '.desc')}</p>
+                      <p className="text-xs text-muted">{t('module.' + m.key + '.desc')}</p>
                     </div>
                     <input
                       type="checkbox"
                       checked={enabledModules[m.key] || false}
                       onChange={(e) => setEnabledModules({ ...enabledModules, [m.key]: e.target.checked })}
-                      className="w-5 h-5 text-pair-600 rounded"
+                      className="w-5 h-5 text-pair-600 rounded-sm"
                     />
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="cck-card p-6">
               <h2 className="text-lg font-semibold mb-4">{t('settings.onboardingFlow')}</h2>
-              <p className="text-sm text-gray-500 mb-4">{t('settings.onboardingDesc')}</p>
+              <p className="text-sm text-muted mb-4">{t('settings.onboardingDesc')}</p>
               <div className="space-y-2">
                 {ONBOARDING_STEPS.map((step, i) => (
                   <label
                     key={step.key}
-                    className={`flex items-center gap-4 p-3 rounded-lg border cursor-pointer ${
-                      onboardingSteps[step.key] ? 'border-pair-300 bg-pair-50' : 'border-gray-200'
+                    className={`flex items-center gap-4 p-3 rounded-sm border cursor-pointer ${
+                      onboardingSteps[step.key] ? 'border-pair-300 bg-pair-50' : 'border-line'
                     }`}
                   >
-                    <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+                    <span className="w-6 h-6 rounded-full bg-line-strong flex items-center justify-center text-xs font-medium text-body">
                       {i + 1}
                     </span>
                     <span className="flex-1 text-sm">{t('onboarding.' + step.key)}</span>
@@ -348,7 +355,7 @@ export default function SettingsPage() {
                       type="checkbox"
                       checked={onboardingSteps[step.key] || false}
                       onChange={(e) => setOnboardingSteps({ ...onboardingSteps, [step.key]: e.target.checked })}
-                      className="w-5 h-5 text-pair-600 rounded"
+                      className="w-5 h-5 text-pair-600 rounded-sm"
                     />
                   </label>
                 ))}
@@ -360,16 +367,16 @@ export default function SettingsPage() {
         {/* General Tab */}
         {activeTab === 'general' && (
           <div className="space-y-8">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+            <div className="cck-card p-6 space-y-6">
               <h2 className="text-lg font-semibold">{t('settings.generalSettings')}</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.timezone')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.timezone')}</label>
                   <select
                     value={generalForm.timezone}
                     onChange={(e) => setGeneralForm({ ...generalForm, timezone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   >
                     {['Asia/Riyadh', 'Asia/Dubai', 'Asia/Kuwait', 'UTC', 'Europe/London', 'America/New_York'].map((tz) => (
                       <option key={tz} value={tz}>{tz}</option>
@@ -377,11 +384,11 @@ export default function SettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.defaultLanguage')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.defaultLanguage')}</label>
                   <select
                     value={generalForm.language}
                     onChange={(e) => setGeneralForm({ ...generalForm, language: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   >
                     <option value="en">English</option>
                     <option value="ar">Arabic</option>
@@ -391,20 +398,20 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.academicYear')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.academicYear')}</label>
                   <input
                     type="text"
                     value={generalForm.academic_year}
                     onChange={(e) => setGeneralForm({ ...generalForm, academic_year: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.currentSemester')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.currentSemester')}</label>
                   <select
                     value={generalForm.semester}
                     onChange={(e) => setGeneralForm({ ...generalForm, semester: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   >
                     <option value="Fall">Fall</option>
                     <option value="Spring">Spring</option>
@@ -415,21 +422,21 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.supportEmail')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.supportEmail')}</label>
                   <input
                     type="email"
                     value={generalForm.support_email}
                     onChange={(e) => setGeneralForm({ ...generalForm, support_email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.maxStudents')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.maxStudents')}</label>
                   <input
                     type="number"
                     value={generalForm.max_students}
                     onChange={(e) => setGeneralForm({ ...generalForm, max_students: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
               </div>
@@ -440,38 +447,38 @@ export default function SettingsPage() {
         {/* Security Tab */}
         {activeTab === 'security' && (
           <div className="space-y-8">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+            <div className="cck-card p-6 space-y-6">
               <h2 className="text-lg font-semibold">{t('settings.securitySettings')}</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.sessionTimeout')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.sessionTimeout')}</label>
                   <input
                     type="number"
                     value={securityForm.session_timeout}
                     onChange={(e) => setSecurityForm({ ...securityForm, session_timeout: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.maxLoginAttempts')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.maxLoginAttempts')}</label>
                   <input
                     type="number"
                     value={securityForm.login_attempts}
                     onChange={(e) => setSecurityForm({ ...securityForm, login_attempts: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.minPasswordLength')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.minPasswordLength')}</label>
                   <input
                     type="number"
                     value={securityForm.password_min_length}
                     onChange={(e) => setSecurityForm({ ...securityForm, password_min_length: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
                 <div className="flex items-center gap-3 pt-6">
@@ -480,22 +487,22 @@ export default function SettingsPage() {
                     id="mfa"
                     checked={securityForm.mfa_required}
                     onChange={(e) => setSecurityForm({ ...securityForm, mfa_required: e.target.checked })}
-                    className="w-5 h-5 text-pair-600 rounded"
+                    className="w-5 h-5 text-pair-600 rounded-sm"
                   />
-                  <label htmlFor="mfa" className="text-sm font-medium text-gray-700">{t('settings.requireMfa')}</label>
+                  <label htmlFor="mfa" className="text-sm font-medium text-body">{t('settings.requireMfa')}</label>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.ipWhitelist')}</label>
+                <label className="block text-sm font-medium text-body mb-1">{t('settings.ipWhitelist')}</label>
                 <textarea
                   value={securityForm.ip_whitelist}
                   onChange={(e) => setSecurityForm({ ...securityForm, ip_whitelist: e.target.value })}
                   placeholder={t('settings.ipWhitelistPlaceholder')}
                   rows={4}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                  className="cck-input font-mono"
                 />
-                <p className="text-xs text-gray-500 mt-1">{t('settings.ipWhitelistHint')}</p>
+                <p className="text-xs text-muted mt-1">{t('settings.ipWhitelistHint')}</p>
               </div>
             </div>
           </div>
@@ -504,10 +511,10 @@ export default function SettingsPage() {
         {/* SSO Tab */}
         {activeTab === 'sso' && (
           <div className="space-y-8">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+            <div className="cck-card p-6 space-y-6">
               <div>
                 <h2 className="text-lg font-semibold">{t('settings.ssoConfig')}</h2>
-                <p className="text-sm text-gray-500 mt-1">{t('settings.ssoDesc')}</p>
+                <p className="text-sm text-muted mt-1">{t('settings.ssoDesc')}</p>
               </div>
 
               <div className="flex items-center gap-3">
@@ -516,18 +523,18 @@ export default function SettingsPage() {
                   id="sso-enabled"
                   checked={ssoForm.enabled}
                   onChange={(e) => setSsoForm({ ...ssoForm, enabled: e.target.checked })}
-                  className="w-5 h-5 text-pair-600 rounded"
+                  className="w-5 h-5 text-pair-600 rounded-sm"
                 />
-                <label htmlFor="sso-enabled" className="text-sm font-medium text-gray-700">{t('settings.ssoEnabled')}</label>
+                <label htmlFor="sso-enabled" className="text-sm font-medium text-body">{t('settings.ssoEnabled')}</label>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.ssoProvider')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.ssoProvider')}</label>
                   <select
                     value={ssoForm.provider}
                     onChange={(e) => setSsoForm({ ...ssoForm, provider: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   >
                     <option value="saml">SAML 2.0</option>
                     <option value="oauth2">OAuth 2.0 / OIDC</option>
@@ -536,68 +543,68 @@ export default function SettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.entityId')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.entityId')}</label>
                   <input
                     type="text"
                     value={ssoForm.entity_id}
                     onChange={(e) => setSsoForm({ ...ssoForm, entity_id: e.target.value })}
                     placeholder="https://idp.university.edu.sa/entity"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    className="cck-input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.ssoUrl')}</label>
+                <label className="block text-sm font-medium text-body mb-1">{t('settings.ssoUrl')}</label>
                 <input
                   type="url"
                   value={ssoForm.sso_url}
                   onChange={(e) => setSsoForm({ ...ssoForm, sso_url: e.target.value })}
                   placeholder="https://idp.university.edu.sa/sso/saml"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  className="cck-input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.certificate')}</label>
+                <label className="block text-sm font-medium text-body mb-1">{t('settings.certificate')}</label>
                 <textarea
                   value={ssoForm.certificate}
                   onChange={(e) => setSsoForm({ ...ssoForm, certificate: e.target.value })}
                   placeholder={t('settings.certificatePlaceholder')}
                   rows={4}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                  className="cck-input font-mono"
                 />
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+            <div className="cck-card p-6 space-y-6">
               <h2 className="text-lg font-semibold">{t('settings.attributeMapping')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.attrEmail')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.attrEmail')}</label>
                   <input
                     type="text"
                     value={ssoForm.attr_email}
                     onChange={(e) => setSsoForm({ ...ssoForm, attr_email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                    className="cck-input font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.attrName')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.attrName')}</label>
                   <input
                     type="text"
                     value={ssoForm.attr_name}
                     onChange={(e) => setSsoForm({ ...ssoForm, attr_name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                    className="cck-input font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.attrStudentId')}</label>
+                  <label className="block text-sm font-medium text-body mb-1">{t('settings.attrStudentId')}</label>
                   <input
                     type="text"
                     value={ssoForm.attr_student_id}
                     onChange={(e) => setSsoForm({ ...ssoForm, attr_student_id: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                    className="cck-input font-mono"
                   />
                 </div>
               </div>
@@ -605,24 +612,151 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => { setSsoTestSuccess(true); setTimeout(() => setSsoTestSuccess(false), 3000); }}
-                className="px-4 py-2 text-sm border border-pair-300 text-pair-700 rounded-lg hover:bg-pair-50"
+                className="px-4 py-2 text-sm border border-pair-300 text-pair-700 rounded-sm hover:bg-pair-50"
               >
                 {t('settings.testConnection')}
               </button>
               {ssoTestSuccess && (
-                <p className="text-sm text-oasis-700 font-medium">{t('settings.connectionSuccess')}</p>
+                <p className="text-sm text-pair-700 font-medium">{t('settings.connectionSuccess')}</p>
               )}
             </div>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="mt-8 px-6 py-2.5 bg-pair-600 text-white rounded-lg font-medium hover:bg-pair-700 disabled:opacity-50"
-        >
-          {saving ? t('common.saving') : t('common.save')}
-        </button>
+        {/* Policies Tab - read-only single source of truth */}
+        {activeTab === 'policies' && (
+          <div className="space-y-8">
+            <div className="cck-card p-6">
+              <h2 className="text-lg font-semibold">{t('settings.policiesTitle')}</h2>
+              <p className="text-sm text-muted mt-1">{t('settings.policiesDesc')}</p>
+            </div>
+
+            {/* Credit Transfer Policy */}
+            <section className="cck-card p-6 space-y-5">
+              <header>
+                <h3 className="text-base font-semibold">{t('settings.policy.transferTitle')}</h3>
+                <p className="text-xs text-muted mt-1">
+                  {t('settings.policy.approvedBy', {
+                    by: CCK_TRANSFER_POLICY.approved_by,
+                    at: CCK_TRANSFER_POLICY.approved_at,
+                    effective: CCK_TRANSFER_POLICY.effective,
+                  })}
+                </p>
+              </header>
+
+              <div>
+                <h4 className="text-sm font-semibold mb-2">{t('settings.policy.transferRulesTitle')}</h4>
+                <ol className="space-y-1.5 list-decimal list-inside text-sm">
+                  {CCK_EQUIVALENCY_RULES.map((rule) => (
+                    <li key={rule.key} className="text-ink">
+                      {locale === 'ar' ? rule.label_ar : rule.label_en}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <ol className="space-y-3">
+                {CCK_TRANSFER_POLICY.sections.map((s) => (
+                  <li key={s.number} className="rounded-sm border border-line p-4">
+                    <p className="text-[11px] uppercase tracking-wide text-pair-700 font-semibold">
+                      {t('settings.policy.transferSection', { number: s.number })}
+                    </p>
+                    <p className="text-sm font-semibold mt-1">
+                      {locale === 'ar' ? s.title_ar : s.title_en}
+                    </p>
+                    <p className="text-sm text-ink mt-1">
+                      {locale === 'ar' ? s.body_ar : s.body_en}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            {/* Grading System Policy */}
+            <section className="cck-card p-6 space-y-5">
+              <header>
+                <h3 className="text-base font-semibold">{t('settings.policy.gradingTitle')}</h3>
+                <p className="text-xs text-muted mt-1">
+                  {t('settings.policy.approvedBy', {
+                    by: CCK_GRADING_POLICY.approved_by,
+                    at: CCK_GRADING_POLICY.approved_at,
+                    effective: CCK_GRADING_POLICY.effective,
+                  })}
+                </p>
+              </header>
+
+              <div className="rounded-sm border border-line overflow-hidden">
+                <header className="px-4 py-3 bg-canvas border-b border-line">
+                  <h4 className="text-sm font-semibold">{t('settings.policy.gradingScheme')}</h4>
+                </header>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-muted border-b">
+                      <th className="px-4 py-2 text-start font-medium">{t('settings.policy.letter')}</th>
+                      <th className="px-4 py-2 text-start font-medium">{t('settings.policy.range')}</th>
+                      <th className="px-4 py-2 text-start font-medium">{t('settings.policy.score')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CCK_GRADING_SCHEME.map((g) => (
+                      <tr key={g.letter} className="border-b border-line last:border-0">
+                        <td className="px-4 py-2 font-semibold" dir="ltr">{g.letter}</td>
+                        <td className="px-4 py-2" dir="ltr">{g.description_en}</td>
+                        <td className="px-4 py-2 tabular-nums" dir="ltr">{g.score.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="rounded-sm border border-line overflow-hidden">
+                <header className="px-4 py-3 bg-canvas border-b border-line">
+                  <h4 className="text-sm font-semibold">{t('settings.policy.standingTitle')}</h4>
+                </header>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-muted border-b">
+                      <th className="px-4 py-2 text-start font-medium">{t('settings.policy.standingClassification')}</th>
+                      <th className="px-4 py-2 text-start font-medium">{t('settings.policy.standingRange')}</th>
+                      <th className="px-4 py-2 text-start font-medium">{t('settings.policy.standingArabic')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CCK_ACADEMIC_STANDING.map((row) => (
+                      <tr key={row.classification_en} className="border-b border-line last:border-0">
+                        <td className="px-4 py-2 font-medium">{row.classification_en}</td>
+                        <td className="px-4 py-2" dir="ltr">{row.range_en}</td>
+                        <td className="px-4 py-2 text-end" dir="rtl">{row.classification_ar}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold mb-2">{t('settings.policy.notesTitle')}</h4>
+                <ul className="space-y-1.5 text-sm">
+                  {(locale === 'ar' ? CCK_GRADING_POLICY.notes_ar : CCK_GRADING_POLICY.notes_en).map((n, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-1.5 inline-block w-1.5 h-1.5 rounded-full bg-pair-600 shrink-0" />
+                      <span>{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab !== 'policies' && (
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn btn-primary mt-8"
+          >
+            {saving ? t('common.saving') : t('common.save')}
+          </button>
+        )}
       </form>
     </div>
   );

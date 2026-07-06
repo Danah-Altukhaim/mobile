@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Switch as RNSwitch, StyleSheet } from 'react-native';
+import { View, Switch as RNSwitch, StyleSheet, Pressable } from 'react-native';
 import { Text } from './Text';
 import { useColors } from '../../theme/useColors';
 import { spacing } from '../../theme/spacing';
 import { useDirection } from '../../hooks/useDirection';
+import { haptic } from '../../utils/haptics';
 
 interface SwitchProps {
   label: string;
@@ -16,15 +17,36 @@ export function Switch({ label, value, onValueChange, description }: SwitchProps
   const colors = useColors();
   const { isRTL, textAlign, writingDirection } = useDirection();
 
+  const handleChange = (next: boolean) => {
+    haptic.selection();
+    onValueChange(next);
+  };
+
   return (
-    <View style={[styles.container, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+    <Pressable
+      onPress={() => handleChange(!value)}
+      style={({ pressed }) => [
+        styles.container,
+        {
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+          backgroundColor: pressed ? colors.surfaceVariant : 'transparent',
+        },
+      ]}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+    >
       {label ? (
         <View style={styles.labelContainer}>
           <Text variant="body" color={colors.textPrimary} style={{ textAlign, writingDirection }}>
             {label}
           </Text>
           {description && (
-            <Text variant="caption" color={colors.textTertiary} style={{ textAlign, writingDirection }}>
+            <Text
+              variant="caption"
+              color={colors.textTertiary}
+              style={{ textAlign, writingDirection, marginTop: 2 }}
+            >
               {description}
             </Text>
           )}
@@ -32,14 +54,12 @@ export function Switch({ label, value, onValueChange, description }: SwitchProps
       ) : null}
       <RNSwitch
         value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: colors.border, true: colors.primaryLight }}
-        thumbColor={value ? colors.primary : colors.surface}
-        accessibilityRole="switch"
-        accessibilityLabel={label}
-        accessibilityState={{ checked: value }}
+        onValueChange={handleChange}
+        trackColor={{ false: colors.border, true: colors.primary }}
+        thumbColor="#FFFFFF"
+        ios_backgroundColor={colors.border}
       />
-    </View>
+    </Pressable>
   );
 }
 
@@ -48,8 +68,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.md,
-    minHeight: 48,
+    paddingHorizontal: spacing.base,
+    minHeight: 56,
     gap: spacing.base,
+    borderRadius: 4,
   },
   labelContainer: {
     flex: 1,

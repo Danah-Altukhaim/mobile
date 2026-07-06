@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { AuthRequest } from '@masari/backend-shared';
+import { AuthRequest, academicQueries, isDbAvailable, mockData } from '@masari/backend-shared';
 
 export class AdminController {
   /** GET /api/v1/admin/analytics/engagement */
@@ -206,6 +206,48 @@ export class AdminController {
         synced_at: new Date().toISOString(),
       },
     });
+  };
+
+  /** POST /api/v1/admin/students/:id/advising-meetings
+   *  Schedule an advising meeting for a student. It then surfaces on the
+   *  student's Academic Calendar via GET /students/me/advising-meetings. */
+  scheduleAdvisingMeeting = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const b = req.body || {};
+    const input = {
+      student_id: String(id),
+      type: b.type || 'general',
+      title_ar: b.title_ar || 'موعد إرشاد أكاديمي',
+      title_en: b.title_en || 'Advising Appointment',
+      advisor_ar: b.advisor_ar || 'المرشد الأكاديمي',
+      advisor_en: b.advisor_en || 'Academic Advisor',
+      scheduled_at: b.scheduled_at || new Date().toISOString(),
+      location_ar: b.location_ar || '',
+      location_en: b.location_en || '',
+      notes_ar: b.notes_ar ?? null,
+      notes_en: b.notes_en ?? null,
+      created_by: (req as AuthRequest).user?.id || 'admin_001',
+    };
+
+    try {
+      let data;
+      if (isDbAvailable()) {
+        data = await academicQueries.createAdvisingMeeting(input);
+      } else {
+        // No-DB fallback: persist into the in-process mock store.
+        data = { id: `adv_${Date.now()}`, status: 'scheduled', ...input };
+        mockData.mockAdvisingMeetings.push(data);
+      }
+      res.status(201).json({ success: true, data, meta: { synced_at: new Date().toISOString() } });
+    } catch (e: any) {
+      if (e.message === 'DB_NOT_AVAILABLE') {
+        const data = { id: `adv_${Date.now()}`, status: 'scheduled', ...input };
+        mockData.mockAdvisingMeetings.push(data);
+        res.status(201).json({ success: true, data, meta: { synced_at: new Date().toISOString(), source: 'mock' } });
+      } else {
+        res.status(500).json({ success: false, errors: [{ code: 'INTERNAL_ERROR', message_ar: 'خطأ في الخادم', message_en: e.message }] });
+      }
+    }
   };
 
   /** POST /api/v1/admin/communications/send */

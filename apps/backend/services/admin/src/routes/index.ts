@@ -9,6 +9,7 @@ export function registerRoutes(app: Express): void {
   app.get('/api/v1/admin/analytics/retention', authenticate, controller.getRetentionAnalytics);
   app.get('/api/v1/admin/students/at-risk', authenticate, controller.getAtRiskStudents);
   app.post('/api/v1/admin/students/:id/intervene', authenticate, controller.intervene);
+  app.post('/api/v1/admin/students/:id/advising-meetings', authenticate, controller.scheduleAdvisingMeeting);
   app.post('/api/v1/admin/communications/send', authenticate, controller.sendCommunication);
   app.put('/api/v1/admin/config/branding', authenticate, controller.updateBranding);
   app.get('/api/v1/admin/users', authenticate, controller.listAdminUsers);

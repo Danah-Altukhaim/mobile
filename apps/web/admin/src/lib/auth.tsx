@@ -31,6 +31,26 @@ const MOCK_CREDENTIALS: Record<string, { password: string; user: AdminUser }> = 
     password: 'admin123',
     user: { id: 'admin_003', email: 'admission@cck.edu.kw', name_en: 'Ahmed Al-Ghamdi', name_ar: 'أحمد الغامدي', role: 'admission_staff' },
   },
+  'vp@cck.edu.kw': {
+    password: 'admin123',
+    user: { id: 'admin_004', email: 'vp@cck.edu.kw', name_en: 'Dr. Yousef Al-Mutairi', name_ar: 'د. يوسف المطيري', role: 'vp' },
+  },
+  'professor@cck.edu.kw': {
+    password: 'admin123',
+    user: { id: 'admin_005', email: 'professor@cck.edu.kw', name_en: 'Dr. Fatima Al-Kandari', name_ar: 'د. فاطمة الكندري', role: 'faculty' },
+  },
+  'facilities@cck.edu.kw': {
+    password: 'admin123',
+    user: { id: 'admin_006', email: 'facilities@cck.edu.kw', name_en: 'Khaled Al-Enezi', name_ar: 'خالد العنزي', role: 'facilities_staff' },
+  },
+  'marketing@cck.edu.kw': {
+    password: 'admin123',
+    user: { id: 'admin_007', email: 'marketing@cck.edu.kw', name_en: 'Sara Al-Ajmi', name_ar: 'سارة العجمي', role: 'marketing_staff' },
+  },
+  'studentlife@cck.edu.kw': {
+    password: 'admin123',
+    user: { id: 'admin_008', email: 'studentlife@cck.edu.kw', name_en: 'Mona Al-Rashidi', name_ar: 'منى الرشيدي', role: 'student_life_staff' },
+  },
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);

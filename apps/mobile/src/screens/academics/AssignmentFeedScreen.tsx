@@ -1,97 +1,152 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FlatList, View, StyleSheet, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
-import { Text, Card, Badge, ScreenSkeleton } from '../../components/ui';
+import { Text, ScreenSkeleton, EmptyState, Icon, type IconName } from '../../components/ui';
 import { useColors } from '../../theme/useColors';
 import { spacing } from '../../theme/spacing';
 import { useLocalizedField } from '../../hooks/useLocale';
 import { useUIStore } from '../../store/ui.store';
 import { academicApi } from '../../services/api';
 import { useDirection } from '../../hooks/useDirection';
+import { useContentBottomInset } from '../../hooks/useContentInset';
+import { toLatnDigits } from '../../i18n/helpers';
+import { courseColor } from '../../utils/courseColor';
 
-const typeIcons: Record<string, string> = {
-  homework: 'document-text',
-  quiz: 'list',
-  exam: 'school',
-  project: 'code-slash',
+const typeIcons: Record<string, IconName> = {
+  homework: 'homework',
+  quiz: 'quiz',
+  exam: 'grades',
+  project: 'project',
 };
 
 export function AssignmentFeedScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const l = useLocalizedField();
   const locale = useUIStore((s) => s.locale);
   const colors = useColors();
+  const isAr = i18n.language === 'ar';
   const { isRTL, textAlign, writingDirection } = useDirection();
   const rowDirection = isRTL ? 'row-reverse' : 'row';
-  const rightAlign = isRTL ? 'flex-start' : 'flex-end';
+  const bottomInset = useContentBottomInset();
 
-  function getUrgency(dueDate: string): { color: string; variant: 'error' | 'warning' | 'info' } {
-    const now = Date.now();
-    const due = new Date(dueDate).getTime();
-    const hoursLeft = (due - now) / (1000 * 60 * 60);
-    if (hoursLeft < 24) return { color: colors.error, variant: 'error' };
-    if (hoursLeft < 72) return { color: colors.warning, variant: 'warning' };
-    return { color: colors.info, variant: 'info' };
-  }
-
-  const { data, isLoading, isRefetching, refetch } = useQuery({
+  const { data, isLoading, isError, isRefetching, refetch } = useQuery({
     queryKey: ['student', 'assignments'],
     queryFn: () => academicApi.getAssignments(),
   });
 
+  const sorted = useMemo(() => {
+    const list = Array.isArray(data?.data) ? data!.data : [];
+    return [...list].sort(
+      (a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+    );
+  }, [data]);
+
   if (isLoading) return <ScreenSkeleton />;
-  const assignments = Array.isArray(data?.data) ? data.data : [];
-  const sorted = [...assignments].sort(
-    (a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
-  );
+
+  function urgencyTone(due: string) {
+    const hours = (new Date(due).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hours < 24) return { fg: colors.brandRed, bg: colors.brandRedWash, label: isAr ? 'عاجل' : 'Urgent' };
+    if (hours < 72) return { fg: colors.warning, bg: colors.warningWash, label: isAr ? 'قريب' : 'Soon' };
+    return { fg: colors.primary, bg: colors.primaryWash, label: isAr ? 'لاحق' : 'Later' };
+  }
 
   return (
     <FlatList
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: bottomInset }]}
       data={sorted}
       keyExtractor={(item: any, i) => item.id || String(i)}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}
-      ListHeaderComponent={
-        <Text variant="h2" style={[styles.title, { textAlign, writingDirection }]}>
-          {t('academics.allAssignments')}
-        </Text>
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
       }
+      ListHeaderComponent={
+        <View style={styles.titleBlock}>
+          <Text
+            variant="overline"
+            color={colors.primary}
+            style={[styles.eyebrow, { textAlign, writingDirection, letterSpacing: isAr ? 0 : 1 }]}
+          >
+            {isAr ? 'كل المهام' : 'All assignments'}
+          </Text>
+          <Text variant="h1" accessibilityRole="header" style={[{ textAlign, writingDirection }]}>
+            {t('academics.allAssignments')}
+          </Text>
+        </View>
+      }
+      ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.divider }]} />}
       ListEmptyComponent={
-        <Text variant="body" color={colors.textSecondary} style={styles.empty}>{t('common.emptyAssignments')}</Text>
+        isError ? (
+          <EmptyState icon="assignments" title={t('common.error')} tone="error" />
+        ) : (
+          <EmptyState icon="assignments" title={t('common.emptyAssignments')} tone="success" />
+        )
       }
       renderItem={({ item }: { item: any }) => {
-        const urgency = getUrgency(item.due_date);
+        const tone = urgencyTone(item.due_date);
+        const accent = courseColor(item.course_code);
         const dueStr = new Date(item.due_date).toLocaleDateString(
           locale === 'ar' ? 'ar-KW' : 'en-KW',
           { weekday: 'short', month: 'short', day: 'numeric' },
         );
 
         return (
-          <Card elevation="sm" style={styles.card}>
-            <View style={[styles.row, { flexDirection: rowDirection }]}>
-              <View style={styles.info}>
-                <Text variant="bodyBold" style={{ textAlign, writingDirection }}>
-                  {l(item, 'title')}
-                </Text>
-                <Text
-                  variant="caption"
-                  color={colors.textSecondary}
-                  style={{ textAlign, writingDirection }}
-                >
-                  {item.course_code} <Ionicons name={(typeIcons[item.type] || 'document') as any} size={14} color={colors.textSecondary} />
-                </Text>
-              </View>
-              <View style={[styles.right, { alignItems: rightAlign }]}>
-                <Badge label={dueStr} variant={urgency.variant} />
-                {item.submitted && (
-                  <Text variant="caption" color={colors.success}>{t('academics.submitted')}</Text>
-                )}
-              </View>
+          <View
+            style={[
+              styles.row,
+              {
+                flexDirection: rowDirection,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={[styles.dateChip, { backgroundColor: tone.bg }]}>
+              <Text variant="overline" color={tone.fg} style={{ letterSpacing: isAr ? 0 : 0.8 }}>
+                {tone.label}
+              </Text>
+              <Text style={[styles.dateChipDate, { color: tone.fg }]} numberOfLines={1}>
+                {toLatnDigits(dueStr)}
+              </Text>
             </View>
-          </Card>
+            <View style={styles.info}>
+              <View style={[styles.courseLine, { flexDirection: rowDirection }]}>
+                <View style={[styles.courseChip, { backgroundColor: accent.wash }]}>
+                  <Text variant="caption" color={accent.fg}>
+                    {item.course_code}
+                  </Text>
+                </View>
+                <Icon
+                  name={typeIcons[item.type] || 'document'}
+                  size={12}
+                  color={colors.textTertiary}
+                />
+                <Text variant="caption" color={colors.textTertiary}>
+                  {t(`academics.${item.type}`, { defaultValue: item.type })}
+                </Text>
+              </View>
+              <Text
+                variant="bodyBold"
+                style={{ textAlign, writingDirection, marginTop: 4 }}
+                numberOfLines={2}
+              >
+                {l(item, 'title')}
+              </Text>
+              {item.submitted && (
+                <View style={[styles.submittedRow, { flexDirection: rowDirection, marginTop: 4 }]}>
+                  <Icon name="check" size={12} color={colors.success} />
+                  <Text variant="caption" color={colors.success}>
+                    {t('academics.submitted')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
         );
       }}
     />
@@ -100,11 +155,41 @@ export function AssignmentFeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: spacing.base, paddingBottom: 100 },
-  title: { marginBottom: spacing.base },
-  card: { marginBottom: spacing.sm },
-  row: { justifyContent: 'space-between', alignItems: 'center' },
-  info: { flex: 1 },
-  right: { gap: 4 },
-  empty: { textAlign: 'center', marginTop: spacing.xl },
+  content: { padding: spacing.base },
+  titleBlock: { marginBottom: spacing.base },
+  eyebrow: { marginBottom: 6 },
+  separator: { height: spacing.sm, backgroundColor: 'transparent' },
+
+  row: {
+    padding: spacing.md,
+    gap: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'stretch',
+  },
+  dateChip: {
+    minWidth: 76,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  dateChipDate: {
+    fontFamily: 'Almarai_800ExtraBold',
+    fontSize: 14,
+    lineHeight: 16,
+  },
+  info: { flex: 1, minWidth: 0 },
+  courseLine: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  courseChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  submittedRow: {
+    alignItems: 'center',
+    gap: 4,
+  },
 });

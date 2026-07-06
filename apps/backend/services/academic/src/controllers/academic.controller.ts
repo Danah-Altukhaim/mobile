@@ -158,6 +158,24 @@ export class AcademicController {
     res.json({ success: true, data: mockData.mockAcademicCalendar, meta: { synced_at: new Date().toISOString(), source: 'mock' } });
   };
 
+  /** GET /api/v1/students/me/advising-meetings */
+  getAdvisingMeetings = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      if (!isDbAvailable()) {
+        res.json({ success: true, data: mockData.mockAdvisingMeetings, meta: { synced_at: new Date().toISOString(), source: 'mock' } });
+        return;
+      }
+      const data = await academicQueries.listAdvisingMeetings(req.user.id);
+      res.json({ success: true, data, meta: { synced_at: new Date().toISOString() } });
+    } catch (e: any) {
+      if (e.message === 'DB_NOT_AVAILABLE') {
+        res.json({ success: true, data: mockData.mockAdvisingMeetings, meta: { synced_at: new Date().toISOString(), source: 'mock' } });
+      } else {
+        res.status(500).json({ success: false, errors: [{ code: 'INTERNAL_ERROR', message_ar: 'خطأ في الخادم', message_en: e.message }] });
+      }
+    }
+  };
+
   /** GET /api/v1/students/me/available-courses */
   getAvailableCourses = async (_req: AuthRequest, res: Response): Promise<void> => {
     res.json({ success: true, data: availableCourses, meta: { synced_at: new Date().toISOString(), source: 'mock' } });

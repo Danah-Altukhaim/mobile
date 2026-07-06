@@ -8,6 +8,7 @@ import { SkeletonTable } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
 import EmptyState from '@/components/EmptyState';
 import Pagination from '@/components/Pagination';
+import PageHeader from '@/components/PageHeader';
 
 interface LogEntry {
   id: string;
@@ -114,34 +115,36 @@ export default function AuditLogPage() {
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('audit.title')}</h1>
-        <input
-          type="text"
-          placeholder={t('audit.filterPlaceholder')}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-72"
-        />
-      </div>
+      <PageHeader
+        title={t('audit.title')}
+        actions={
+          <input
+            type="text"
+            placeholder={t('audit.filterPlaceholder')}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border border-line-strong rounded-sm px-3 py-2 text-sm w-72"
+          />
+        }
+      />
 
       <div className="flex items-center gap-4 mb-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-500">{t('audit.dateFrom')}</label>
+          <label className="text-sm text-muted">{t('audit.dateFrom')}</label>
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="border border-line-strong rounded-sm px-3 py-2 text-sm"
           />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-500">{t('audit.dateTo')}</label>
+          <label className="text-sm text-muted">{t('audit.dateTo')}</label>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="border border-line-strong rounded-sm px-3 py-2 text-sm"
           />
         </div>
         {hasActiveFilters && (
@@ -154,36 +157,36 @@ export default function AuditLogPage() {
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="cck-card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 border-b bg-gray-50">
+            <tr className="text-left text-muted border-b bg-canvas">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className="px-6 py-3 cursor-pointer select-none hover:text-gray-700"
+                  className="px-6 py-3 cursor-pointer select-none hover:text-body"
                 >
                   {col.label}{sortIndicator(col.key)}
                 </th>
               ))}
-              <th className="px-6 py-3 text-gray-500">{t('audit.ip')}</th>
+              <th className="px-6 py-3 text-muted">{t('audit.ip')}</th>
             </tr>
           </thead>
           <tbody>
             {paginated.map((log) => (
-              <tr key={log.id} className="border-b border-gray-50 last:border-0">
-                <td className="px-6 py-4 text-xs text-gray-500">
+              <tr key={log.id} className="border-b border-line last:border-0">
+                <td className="px-6 py-4 text-xs text-muted">
                   {new Date(log.timestamp).toLocaleString()}
                 </td>
                 <td className="px-6 py-4 font-medium">{log.admin_name}</td>
-                <td className="px-6 py-4 text-gray-600">{log.action}</td>
+                <td className="px-6 py-4 text-body">{log.action}</td>
                 <td className="px-6 py-4">
-                  <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                  <span className="px-2 py-0.5 rounded-sm text-xs bg-canvas text-body">
                     {log.resource}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-xs text-gray-400 font-mono">{log.ip}</td>
+                <td className="px-6 py-4 text-xs text-muted font-mono">{log.ip}</td>
               </tr>
             ))}
           </tbody>

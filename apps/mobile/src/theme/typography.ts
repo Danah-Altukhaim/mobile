@@ -1,72 +1,78 @@
 import { TextStyle } from 'react-native';
 
 // App typography — Almarai for all text (EN + AR).
-// Almarai ships four weights: 300 Light, 400 Regular, 700 Bold, 800 ExtraBold.
-// CCK rhythm (H1 Black · H2/H3 Bold · H4 SemiBold · body Regular) is preserved
-// by mapping Black/ExtraBold → 800, Bold/SemiBold → 700, Medium/Regular → 400.
+// Almarai weights: 300 Light, 400 Regular, 700 Bold, 800 ExtraBold.
+// Hierarchy comes from weight + size, not from letter-spacing tricks.
+// NEVER set letter-spacing > 0 on Arabic — breaks ligatures.
 
 export const typography = {
-  // Display — hero headlines
+  // Hero numbers / display moments
   display: {
     fontFamily: 'Almarai_800ExtraBold',
-    fontSize: 48,
-    lineHeight: 56,
-    letterSpacing: 0,
+    fontSize: 44,
+    lineHeight: 50,
+    letterSpacing: -0.5,
   } as TextStyle,
 
   // Page titles
   h1: {
     fontFamily: 'Almarai_800ExtraBold',
-    fontSize: 36,
-    lineHeight: 44,
-    letterSpacing: 0,
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: -0.4,
   } as TextStyle,
 
   // Section headers
   h2: {
     fontFamily: 'Almarai_700Bold',
-    fontSize: 28,
-    lineHeight: 36,
-    letterSpacing: 0,
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.2,
   } as TextStyle,
 
   // Subsection headers
   h3: {
     fontFamily: 'Almarai_700Bold',
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: 20,
+    lineHeight: 28,
     letterSpacing: 0,
   } as TextStyle,
 
-  // Card titles, sidebar headers
+  // Card titles
   h4: {
     fontFamily: 'Almarai_700Bold',
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 17,
+    lineHeight: 24,
     letterSpacing: 0,
   } as TextStyle,
 
-  // Default body
+  // Body
   body: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 15,
+    lineHeight: 24,
     letterSpacing: 0,
   } as TextStyle,
 
-  // Body bold
   bodyBold: {
     fontFamily: 'Almarai_700Bold',
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 15,
+    lineHeight: 24,
     letterSpacing: 0,
   } as TextStyle,
 
-  // Secondary info, metadata
+  // Secondary, metadata
   small: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 20,
+    letterSpacing: 0,
+  } as TextStyle,
+
+  smallBold: {
+    fontFamily: 'Almarai_700Bold',
+    fontSize: 13,
+    lineHeight: 20,
     letterSpacing: 0,
   } as TextStyle,
 
@@ -74,23 +80,23 @@ export const typography = {
   caption: {
     fontFamily: 'Almarai_700Bold',
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 16,
     letterSpacing: 0,
   } as TextStyle,
 
-  // Category labels (uppercase)
+  // Category labels (uppercase, English only — letterSpacing stripped on AR consumers)
   overline: {
     fontFamily: 'Almarai_700Bold',
     fontSize: 11,
-    lineHeight: 16,
-    letterSpacing: 0.8,
+    lineHeight: 14,
+    letterSpacing: 1.0,
     textTransform: 'uppercase' as const,
   } as TextStyle,
 
   // Buttons
   button: {
     fontFamily: 'Almarai_700Bold',
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20,
     letterSpacing: 0,
   } as TextStyle,
@@ -98,24 +104,23 @@ export const typography = {
   // Tab bar labels
   tabLabel: {
     fontFamily: 'Almarai_700Bold',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 14,
     letterSpacing: 0,
   } as TextStyle,
 
-  // Arabic body — kept as aliases so existing consumers still resolve.
-  // Extra line height preserved for ligature breathing room.
+  // Arabic — extra line height for ligature breathing room
   bodyAr: {
     fontFamily: 'Almarai_400Regular',
-    fontSize: 17,
-    lineHeight: 30,
+    fontSize: 16,
+    lineHeight: 28,
     letterSpacing: 0,
   } as TextStyle,
 
   bodyBoldAr: {
     fontFamily: 'Almarai_700Bold',
-    fontSize: 17,
-    lineHeight: 30,
+    fontSize: 16,
+    lineHeight: 28,
     letterSpacing: 0,
   } as TextStyle,
 };

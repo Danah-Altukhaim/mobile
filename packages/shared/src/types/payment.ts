@@ -1,5 +1,5 @@
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
-export type PaymentMethod = 'knet' | 'mada' | 'benefit' | 'naps' | 'omannet' | 'apple_pay' | 'google_pay' | 'visa' | 'mastercard' | 'stc_pay';
+export type PaymentMethod = 'knet' | 'mada' | 'benefit' | 'naps' | 'omannet' | 'apple_pay' | 'google_pay' | 'visa' | 'mastercard' | 'stc_pay' | 'cash';
 
 export interface Payment {
   id: string;

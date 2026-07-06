@@ -22,4 +22,24 @@ export const campusApi = {
   getDining: () => apiClient.get<any[]>(API_PATHS.CAMPUS_DINING),
 
   getLostFound: () => apiClient.get<any[]>(API_PATHS.CAMPUS_LOST_FOUND),
+
+  getClassChannels: () => apiClient.get<any[]>(API_PATHS.CLASS_CHANNELS),
+
+  getClassChannel: (channelId: string) =>
+    apiClient.get<any>(API_PATHS.CLASS_CHANNEL_DETAIL(channelId)),
+
+  postClassChannelReply: (
+    channelId: string,
+    data: { content_ar?: string; content_en?: string },
+  ) => apiClient.post<any>(API_PATHS.CLASS_CHANNEL_POST(channelId), data),
+
+  getClubChannels: () => apiClient.get<any[]>(API_PATHS.CLUB_CHANNELS),
+
+  getClubChannel: (channelId: string) =>
+    apiClient.get<any>(API_PATHS.CLUB_CHANNEL_DETAIL(channelId)),
+
+  postClubChannelReply: (
+    channelId: string,
+    data: { content_ar?: string; content_en?: string },
+  ) => apiClient.post<any>(API_PATHS.CLUB_CHANNEL_POST(channelId), data),
 };

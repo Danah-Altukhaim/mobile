@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/lib/roles';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -27,12 +28,12 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const handleDemoLogin = async () => {
+  const handleDemoLogin = async (demoEmail: string) => {
     setError(false);
     setLoading(true);
-    setEmail('registrar@cck.edu.kw');
-    setPassword('admin123');
-    const ok = await login('registrar@cck.edu.kw', 'admin123');
+    setEmail(demoEmail);
+    setPassword(DEMO_PASSWORD);
+    const ok = await login(demoEmail, DEMO_PASSWORD);
     if (ok) {
       router.replace('/');
     } else {
@@ -41,57 +42,65 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  const adminDemo = DEMO_ACCOUNTS.find((a) => a.role === 'super_admin');
+  const departmentDemos = DEMO_ACCOUNTS.filter((a) => a.role !== 'super_admin');
+
   return (
     <div
       dir={dir}
-      className="min-h-screen flex items-center justify-center p-4 bg-[#F6F6F6]"
+      className="relative min-h-screen flex items-center justify-center p-4 bg-pine overflow-hidden"
     >
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 border-t-4 border-t-pair-600">
+      {/* Brand chevron motif, anchored bottom-end, used sparingly */}
+      <div aria-hidden className="cck-chevrons absolute -bottom-10 -end-10 h-72 w-72 opacity-[0.14] rotate-6 pointer-events-none" />
+      <div aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-leaf" />
+
+      <div className="relative w-full max-w-md">
+        <div className="cck-card shadow-xl p-8 pt-7">
           <div className="text-center mb-8">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/cck-logo-wordmark.png"
-              alt="Canadian College of Kuwait"
-              className="h-14 w-auto mx-auto mb-5"
-            />
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pair-600">
-              {t('brand.tagline')}
-            </p>
-            <h1 className="text-xl font-bold text-[#222222] mt-3">{t('login.title')}</h1>
-            <p className="text-sm text-[#737477] mt-1">{t('login.subtitle')}</p>
+            <span className="inline-grid place-items-center bg-white mb-5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/cck-logo-wordmark.png"
+                alt="Canadian College of Kuwait"
+                className="h-14 w-auto mx-auto"
+              />
+            </span>
+            <p className="cck-eyebrow">{t('brand.tagline')}</p>
+            <h1 className="cck-title text-xl mt-3">{t('login.title')}</h1>
+            <p className="text-sm text-muted mt-1">{t('login.subtitle')}</p>
+            <div className="cck-rule w-16 mx-auto mt-4" />
           </div>
 
           {error && (
-            <div role="alert" className="bg-danger-50 border border-danger-200 rounded-lg p-3 mb-6">
+            <div role="alert" className="bg-danger-50 border border-danger-200 rounded-sm p-3 mb-6">
               <p className="text-sm text-danger-700">{t('login.error')}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
+              <label htmlFor="login-email" className="cck-label">{t('login.email')}</label>
               <input
                 id="login-email"
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-pair-500 focus:border-pair-500 outline-none"
+                className="cck-input"
                 placeholder="registrar@cck.edu.kw"
                 required
                 dir="ltr"
               />
             </div>
             <div>
-              <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')}</label>
+              <label htmlFor="login-password" className="cck-label">{t('login.password')}</label>
               <input
                 id="login-password"
                 type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-pair-500 focus:border-pair-500 outline-none"
+                className="cck-input"
                 placeholder="••••••••"
                 required
                 dir="ltr"
@@ -100,7 +109,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-pair-600 text-white py-2.5 rounded-lg font-medium hover:bg-pair-700 disabled:opacity-50 transition-colors"
+              className="btn btn-primary btn-block py-2.5"
             >
               {loading ? t('login.signingIn') : t('login.signIn')}
             </button>
@@ -109,23 +118,44 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <button
               onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-muted hover:text-pair-700 transition-colors"
             >
               {locale === 'ar' ? 'English' : 'العربية'}
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            disabled={loading}
-            className="mt-4 w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg py-2.5 text-xs text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
-          >
-            {locale === 'ar' ? 'دخول تجريبي · registrar@cck.edu.kw' : 'Quick demo login · registrar@cck.edu.kw'}
-          </button>
+          {/* Demo logins - one per department, plus Admin with the full spread */}
+          <div className="mt-6 pt-5 border-t border-line">
+            <p className="cck-eyebrow text-center mb-3">{t('login.demoTitle')}</p>
+            {adminDemo && (
+              <button
+                type="button"
+                onClick={() => handleDemoLogin(adminDemo.email)}
+                disabled={loading}
+                className="btn btn-outline btn-block py-2.5 mb-2 text-xs"
+              >
+                <span className="font-semibold">{t(adminDemo.labelKey)}</span>
+                <span className="text-muted font-normal ms-1.5" dir="ltr">· {adminDemo.email}</span>
+              </button>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {departmentDemos.map((a) => (
+                <button
+                  key={a.email}
+                  type="button"
+                  onClick={() => handleDemoLogin(a.email)}
+                  disabled={loading}
+                  title={a.email}
+                  className="btn btn-outline py-2 text-xs font-normal text-muted truncate"
+                >
+                  {t(a.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <p className="text-center text-xs text-[#737477] mt-6 px-4">
+        <p className="text-center text-xs text-white/60 mt-6 px-4">
           {t('brand.partnership')}
         </p>
       </div>

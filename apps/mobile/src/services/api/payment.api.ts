@@ -12,8 +12,4 @@ export const paymentApi = {
   getHistory: () => apiClient.get<any[]>(API_PATHS.PAYMENT_HISTORY),
 
   getInstallments: () => apiClient.get<any>(API_PATHS.PAYMENT_INSTALLMENTS),
-
-  getFinancialAid: () => apiClient.get<any[]>(API_PATHS.PAYMENT_FINANCIAL_AID),
-
-  getRefunds: () => apiClient.get<any[]>(API_PATHS.PAYMENT_REFUNDS),
 };

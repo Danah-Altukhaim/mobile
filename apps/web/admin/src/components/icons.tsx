@@ -119,10 +119,27 @@ export const MegaphoneIcon = (p: IconProps) => (
   </svg>
 );
 
+export const MarketingIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <rect x="2.5" y="4" width="15" height="12" rx="1.5" />
+    <path d="M2.5 13l4-3.5 3 2.5 3-3 5 4.5" />
+    <circle cx="7" cy="8" r="1.2" />
+  </svg>
+);
+
 export const UsersIcon = (p: IconProps) => (
   <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
     <circle cx="7" cy="7" r="3" /><path d="M2 17c0-3 2.5-5 5-5s5 2 5 5" />
     <circle cx="14" cy="6" r="2" /><path d="M14 11c2.5 0 4 1.5 4 4" />
+  </svg>
+);
+
+export const IdCardIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <rect x="2" y="4" width="16" height="12" rx="1.5" />
+    <circle cx="7" cy="9" r="2" />
+    <path d="M4 14c0-1.6 1.3-2.5 3-2.5s3 .9 3 2.5" />
+    <path d="M12 8.5h4" /><path d="M12 11.5h4" />
   </svg>
 );
 
@@ -168,6 +185,15 @@ export const SparklesIcon = (p: IconProps) => (
   </svg>
 );
 
+export const BuildingIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <path d="M4 17V4a1 1 0 011-1h6a1 1 0 011 1v13" />
+    <path d="M12 8h3a1 1 0 011 1v8" />
+    <path d="M2 17h16" />
+    <path d="M6.5 6.5h0M9.5 6.5h0M6.5 9.5h0M9.5 9.5h0M6.5 12.5h0M9.5 12.5h0" />
+  </svg>
+);
+
 export const LogoutIcon = (p: IconProps) => (
   <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
     <path d="M7 17H4a1 1 0 01-1-1V4a1 1 0 011-1h3" /><path d="M13 14l4-4-4-4" /><path d="M17 10H7" />
@@ -196,6 +222,58 @@ export const CloseIcon = (p: IconProps) => (
 export const SearchIcon = (p: IconProps) => (
   <svg xmlns={base} viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={p.className} aria-hidden>
     <circle cx="9" cy="9" r="6" /><path d="M14 14l3 3" />
+  </svg>
+);
+
+export const CheckIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} strokeWidth={2} className={p.className} aria-hidden>
+    <path d="M4 10.5l4 4 8-9" />
+  </svg>
+);
+
+export const ClockIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <circle cx="10" cy="10" r="7.5" /><path d="M10 5.5V10l3 2" />
+  </svg>
+);
+
+export const PaperclipIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <path d="M16 8.5l-6.5 6.5a3.5 3.5 0 01-5-5l7-7a2.3 2.3 0 013.3 3.3l-7 7a1.1 1.1 0 01-1.6-1.6l6.3-6.3" />
+  </svg>
+);
+
+export const DocumentIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <path d="M5 2.5h6l4 4V17a.5.5 0 01-.5.5h-9A.5.5 0 015 17V3a.5.5 0 01.5-.5z" />
+    <path d="M11 2.5V6.5h4" /><path d="M7.5 10.5h5M7.5 13.5h5" />
+  </svg>
+);
+
+export const ImageIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <rect x="2.5" y="3.5" width="15" height="13" rx="1" />
+    <circle cx="7" cy="8" r="1.5" /><path d="M3 14l4-4 3 3 3.5-3.5L17 13" />
+  </svg>
+);
+
+export const LinkIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <path d="M8.5 11.5a3 3 0 004.4.3l2.3-2.3a3 3 0 00-4.2-4.2l-1.3 1.2" />
+    <path d="M11.5 8.5a3 3 0 00-4.4-.3l-2.3 2.3a3 3 0 004.2 4.2l1.3-1.2" />
+  </svg>
+);
+
+export const MailIcon = (p: IconProps) => (
+  <svg xmlns={base} {...stroke} className={p.className} aria-hidden>
+    <rect x="2.5" y="4.5" width="15" height="11" rx="1" /><path d="M3 5.5l7 5 7-5" />
+  </svg>
+);
+
+/* Directional chevron. Point defaults to trailing; caller flips for RTL. */
+export const ChevronIcon = ({ className, dir = 'end' }: IconProps & { dir?: 'start' | 'end' }) => (
+  <svg xmlns={base} viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    {dir === 'end' ? <path d="M8 5l5 5-5 5" /> : <path d="M12 5l-5 5 5 5" />}
   </svg>
 );
 

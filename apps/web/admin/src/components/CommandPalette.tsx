@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/auth';
+import { canAccess } from '@/lib/roles';
 import { SearchIcon } from './icons';
 
 const ROUTES: { href: string; labelKey: string; sectionKey: string }[] = [
@@ -13,7 +15,6 @@ const ROUTES: { href: string; labelKey: string; sectionKey: string }[] = [
   { href: '/appeals', labelKey: 'nav.appeals', sectionKey: 'nav.workflows' },
   { href: '/fa-screen', labelKey: 'nav.faScreen', sectionKey: 'nav.workflows' },
   { href: '/warnings', labelKey: 'nav.warnings', sectionKey: 'nav.workflows' },
-  { href: '/attendance-policy', labelKey: 'nav.attendancePolicy', sectionKey: 'nav.workflows' },
   { href: '/feedback', labelKey: 'nav.complaints', sectionKey: 'nav.workflows' },
   { href: '/sport', labelKey: 'nav.sport', sectionKey: 'nav.workflows' },
   { href: '/directory', labelKey: 'nav.directory', sectionKey: 'nav.workflows' },
@@ -35,13 +36,14 @@ interface Props {
 export default function CommandPalette({ open, onClose }: Props) {
   const router = useRouter();
   const { t, dir } = useI18n();
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const enriched = ROUTES.map((r) => ({
+    const enriched = ROUTES.filter((r) => canAccess(user?.role, r.href)).map((r) => ({
       ...r,
       label: t(r.labelKey),
       section: t(r.sectionKey),
@@ -50,7 +52,7 @@ export default function CommandPalette({ open, onClose }: Props) {
     return enriched.filter((r) =>
       r.label.toLowerCase().includes(q) || r.section.toLowerCase().includes(q) || r.href.includes(q),
     );
-  }, [query, t]);
+  }, [query, t, user]);
 
   useEffect(() => {
     if (!open) return;
@@ -104,23 +106,23 @@ export default function CommandPalette({ open, onClose }: Props) {
       dir={dir}
       className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4"
     >
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
-      <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-lg overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-          <SearchIcon className="text-gray-400" />
+      <div className="absolute inset-0 bg-pine-900/50 backdrop-blur-[1px]" onClick={onClose} aria-hidden />
+      <div className="relative cck-card shadow-xl w-full max-w-lg overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-line">
+          <SearchIcon className="text-muted" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('palette.placeholder')}
-            className="flex-1 outline-none text-sm bg-transparent"
+            className="flex-1 outline-none text-sm bg-transparent text-ink"
             aria-label={t('palette.placeholder')}
           />
-          <kbd className="text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5">esc</kbd>
+          <kbd className="text-[10px] text-muted border border-line-strong rounded-sm px-1.5 py-0.5">esc</kbd>
         </div>
         <ul role="listbox" aria-label={t('palette.label')} className="max-h-80 overflow-y-auto py-2">
           {items.length === 0 ? (
-            <li className="px-4 py-6 text-center text-sm text-gray-400">{t('palette.empty')}</li>
+            <li className="px-4 py-6 text-center text-sm text-muted">{t('palette.empty')}</li>
           ) : (
             items.map((item, i) => {
               const isActive = i === activeIdx;
@@ -130,21 +132,21 @@ export default function CommandPalette({ open, onClose }: Props) {
                     type="button"
                     onMouseEnter={() => setActiveIdx(i)}
                     onClick={() => { onClose(); router.push(item.href); }}
-                    className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-start ${
-                      isActive ? 'bg-pair-50 text-pair-700' : 'hover:bg-gray-50 text-[#222]'
+                    className={`relative w-full flex items-center justify-between gap-3 px-4 py-2 text-sm text-start transition-colors ${
+                      isActive ? 'bg-pair-50 text-pair-700 before:absolute before:inset-y-1 before:start-0 before:w-[3px] before:bg-pair-600' : 'hover:bg-canvas text-ink'
                     }`}
                   >
-                    <span className="font-medium truncate">{item.label}</span>
-                    <span className="text-xs text-gray-400 truncate">{item.section}</span>
+                    <span className="font-semibold truncate">{item.label}</span>
+                    <span className="text-xs text-muted truncate">{item.section}</span>
                   </button>
                 </li>
               );
             })
           )}
         </ul>
-        <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-[11px] text-gray-400">
-          <span><kbd className="border border-gray-200 rounded px-1">↑↓</kbd> {t('palette.hintNav')}</span>
-          <span><kbd className="border border-gray-200 rounded px-1">↵</kbd> {t('palette.hintEnter')}</span>
+        <div className="px-4 py-2 border-t border-line flex items-center gap-3 text-[11px] text-muted">
+          <span><kbd className="border border-line-strong rounded-sm px-1">↑↓</kbd> {t('palette.hintNav')}</span>
+          <span><kbd className="border border-line-strong rounded-sm px-1">↵</kbd> {t('palette.hintEnter')}</span>
         </div>
       </div>
     </div>

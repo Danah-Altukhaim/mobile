@@ -49,16 +49,16 @@ export default function SendNotificationModal({
     }
   };
 
-  const field = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pair-500';
-  const label = 'block text-xs font-medium text-[#737477] mb-1';
+  const field = 'cck-input';
+  const label = 'cck-label';
   const targetCount = target === 'registered' ? registrations : audienceSize;
 
   const radio = (value: Target, text: string) => (
-    <label className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm cursor-pointer ${
-      target === value ? 'border-pair-600 bg-pair-50 text-pair-700' : 'border-gray-300'
+    <label className={`flex items-center gap-2 px-3 py-2 border rounded-sm text-sm cursor-pointer ${
+      target === value ? 'border-pair-600 bg-pair-50 text-pair-700' : 'border-line-strong text-body'
     }`}>
       <input type="radio" name="target" value={value} checked={target === value}
-        onChange={() => setTarget(value)} />
+        onChange={() => setTarget(value)} className="accent-pair-600" />
       {text}
     </label>
   );
@@ -66,10 +66,11 @@ export default function SendNotificationModal({
   return (
     <div role="dialog" aria-modal="true" dir={dir}
       className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
-      <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-lg mx-4">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">{t('studentLife.sendNotification')}</h3>
+      <div className="absolute inset-0 bg-pine-900/50 backdrop-blur-[1px]" onClick={onClose} aria-hidden />
+      <div className="relative cck-card shadow-xl w-full max-w-lg mx-4">
+        <div className="px-6 py-4 border-b border-line flex items-center gap-3">
+          <span aria-hidden className="h-5 w-1 bg-pair-600 rounded-sm" />
+          <h3 className="cck-title text-lg">{t('studentLife.sendNotification')}</h3>
         </div>
         <div className="p-6 space-y-4">
           <div>
@@ -91,13 +92,11 @@ export default function SendNotificationModal({
             <p className="text-sm text-danger-600">{t('studentLife.requiredFields')}</p>
           )}
         </div>
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-          <button onClick={onClose} disabled={sending}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">
+        <div className="px-6 py-4 border-t border-line flex justify-end gap-3">
+          <button onClick={onClose} disabled={sending} className="btn btn-outline">
             {t('common.cancel')}
           </button>
-          <button onClick={submit} disabled={sending}
-            className="px-4 py-2 text-sm bg-pair-600 text-white rounded-lg hover:bg-pair-700 disabled:opacity-50">
+          <button onClick={submit} disabled={sending} className="btn btn-primary">
             {sending ? t('studentLife.sending') : `${t('studentLife.send')} · ${targetCount}`}
           </button>
         </div>

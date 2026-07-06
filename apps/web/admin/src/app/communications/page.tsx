@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { SkeletonTable } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import PageHeader from '@/components/PageHeader';
 
 const SENT_KEY = ['communications', 'sent'] as const;
 
@@ -37,7 +38,7 @@ const AUDIENCE_ESTIMATE: Record<string, number> = {
   course_section: 30,
 };
 
-// CCK schools — used for the "filter by major" chips.
+// CCK schools - used for the "filter by major" chips.
 const CCK_SCHOOLS = [
   'Business',
   'Advanced Technology & Applied Sciences',
@@ -123,67 +124,67 @@ export default function CommunicationsPage() {
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
-      <h1 className="text-2xl font-bold mb-6">{t('comms.title')}</h1>
+      <PageHeader title={t('comms.title')} />
 
       {result && (
-        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-4 mb-6">
-          <p className="text-oasis-700 font-medium">{t('comms.messageQueued')}</p>
-          <p className="text-sm text-oasis-600">
+        <div role="status" aria-live="polite" className="bg-pair-50 border border-pair-200 rounded-sm p-4 mb-6">
+          <p className="text-pair-700 font-medium">{t('comms.messageQueued')}</p>
+          <p className="text-sm text-pair-600">
             {t('comms.messageId', { value: result.message_id })} - {t('comms.recipients', { value: result.recipients_count })}
           </p>
         </div>
       )}
 
       {sendError && (
-        <div role="alert" className="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6">
+        <div role="alert" className="bg-danger-50 border border-danger-200 rounded-sm p-4 mb-6">
           <p className="text-danger-700 font-medium">{t('common.error')}</p>
           <p className="text-sm text-danger-600">{sendError}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="cck-card p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('comms.subjectEn')}</label>
+            <label className="block text-sm font-medium text-body mb-1">{t('comms.subjectEn')}</label>
             <input
               type="text"
               dir="ltr"
               value={form.subject_en}
               onChange={(e) => setForm({ ...form, subject_en: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="cck-input"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('comms.subjectAr')}</label>
+            <label className="block text-sm font-medium text-body mb-1">{t('comms.subjectAr')}</label>
             <input
               type="text"
               dir="rtl"
               value={form.subject_ar}
               onChange={(e) => setForm({ ...form, subject_ar: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="cck-input"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('comms.bodyEn')}</label>
+            <label className="block text-sm font-medium text-body mb-1">{t('comms.bodyEn')}</label>
             <textarea
               rows={4}
               dir="ltr"
               value={form.body_en}
               onChange={(e) => setForm({ ...form, body_en: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="cck-input"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('comms.bodyAr')}</label>
+            <label className="block text-sm font-medium text-body mb-1">{t('comms.bodyAr')}</label>
             <textarea
               rows={4}
               dir="rtl"
               value={form.body_ar}
               onChange={(e) => setForm({ ...form, body_ar: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="cck-input"
               required
             />
           </div>
@@ -191,15 +192,15 @@ export default function CommunicationsPage() {
 
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <label className="block text-sm font-medium text-gray-700">{t('comms.targetAudience')}</label>
-            <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
+            <label className="block text-sm font-medium text-body">{t('comms.targetAudience')}</label>
+            <span className="text-xs text-muted bg-canvas rounded-full px-2 py-0.5">
               {t('comms.recipients', { value: estimatedRecipients.toLocaleString() })}
             </span>
           </div>
           <select
             value={form.target_audience}
             onChange={(e) => setForm({ ...form, target_audience: e.target.value })}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className="border border-line-strong rounded-sm px-3 py-2 text-sm"
           >
             <option value="all_students">{t('comms.allStudents')}</option>
             <option value="at_risk">{t('comms.atRisk')}</option>
@@ -208,26 +209,26 @@ export default function CommunicationsPage() {
             <option value="course_section">{t('comms.courseSection')}</option>
           </select>
 
-          {/* Per-course-section targeting — academic staff messaging one class */}
+          {/* Per-course-section targeting - academic staff messaging one class */}
           {form.target_audience === 'course_section' && (
             <div className="mt-3 flex flex-wrap gap-3">
               <select
                 value={form.target_course}
                 onChange={(e) => setForm({ ...form, target_course: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[260px]"
+                className="border border-line-strong rounded-sm px-3 py-2 text-sm min-w-[260px]"
                 required
               >
                 <option value="">{t('comms.selectCourse')}</option>
                 {COURSES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.code} — {c.name_en}
+                    {c.code} - {c.name_en}
                   </option>
                 ))}
               </select>
               <select
                 value={form.target_section}
                 onChange={(e) => setForm({ ...form, target_section: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="border border-line-strong rounded-sm px-3 py-2 text-sm"
                 required
               >
                 <option value="">{t('comms.selectSection')}</option>
@@ -243,7 +244,7 @@ export default function CommunicationsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('comms.filterByMajor')}</label>
+            <label className="block text-sm font-medium text-body mb-2">{t('comms.filterByMajor')}</label>
             <div className="flex flex-wrap gap-2">
               {CCK_SCHOOLS.map((major) => (
                 <button
@@ -257,10 +258,10 @@ export default function CommunicationsPage() {
                         : [...prev.target_majors, major],
                     }))
                   }
-                  className={`px-3 py-1 rounded-lg text-xs border ${
+                  className={`px-3 py-1 rounded-sm text-xs border ${
                     form.target_majors.includes(major)
                       ? 'bg-pair-600 text-white border-pair-600'
-                      : 'bg-white text-gray-600 border-gray-300'
+                      : 'bg-white text-body border-line-strong'
                   }`}
                 >
                   {major}
@@ -269,7 +270,7 @@ export default function CommunicationsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('comms.filterByYear')}</label>
+            <label className="block text-sm font-medium text-body mb-2">{t('comms.filterByYear')}</label>
             <div className="flex flex-wrap gap-2">
               {['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'].map((year) => (
                 <button
@@ -283,10 +284,10 @@ export default function CommunicationsPage() {
                         : [...prev.target_years, year],
                     }))
                   }
-                  className={`px-3 py-1 rounded-lg text-xs border ${
+                  className={`px-3 py-1 rounded-sm text-xs border ${
                     form.target_years.includes(year)
                       ? 'bg-pair-600 text-white border-pair-600'
-                      : 'bg-white text-gray-600 border-gray-300'
+                      : 'bg-white text-body border-line-strong'
                   }`}
                 >
                   {year}
@@ -297,41 +298,41 @@ export default function CommunicationsPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">{t('comms.scheduleSend')}</label>
+          <label className="block text-sm font-medium text-body mb-2">{t('comms.scheduleSend')}</label>
           <div className="flex items-center gap-4">
             <input
               type="datetime-local"
               value={form.scheduled_at}
               onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="border border-line-strong rounded-sm px-3 py-2 text-sm"
             />
             {form.scheduled_at && (
               <button
                 type="button"
                 onClick={() => setForm({ ...form, scheduled_at: '' })}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-muted hover:text-body"
               >
                 {t('comms.clearSendNow')}
               </button>
             )}
             {!form.scheduled_at && (
-              <span className="text-sm text-gray-400">{t('comms.sendImmediately')}</span>
+              <span className="text-sm text-muted">{t('comms.sendImmediately')}</span>
             )}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">{t('comms.channels')}</label>
+          <label className="block text-sm font-medium text-body mb-2">{t('comms.channels')}</label>
           <div className="flex gap-3">
             {['push', 'email', 'sms', 'whatsapp'].map((ch) => (
               <button
                 key={ch}
                 type="button"
                 onClick={() => toggleChannel(ch)}
-                className={`px-4 py-1.5 rounded-lg text-sm border ${
+                className={`px-4 py-1.5 rounded-sm text-sm border ${
                   form.channels.includes(ch)
                     ? 'bg-pair-600 text-white border-pair-600'
-                    : 'bg-white text-gray-600 border-gray-300'
+                    : 'bg-white text-body border-line-strong'
                 }`}
               >
                 {ch.toUpperCase()}
@@ -343,7 +344,7 @@ export default function CommunicationsPage() {
         <button
           type="submit"
           disabled={sending}
-          className="px-6 py-2.5 bg-pair-600 text-white rounded-lg font-medium hover:bg-pair-700 disabled:opacity-50"
+          className="btn btn-primary"
         >
           {sending ? t('comms.sending') : t('comms.send')}
         </button>
@@ -351,9 +352,9 @@ export default function CommunicationsPage() {
 
       {/* Sent Messages History */}
       <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4">{t('comms.sentMessages')}</h2>
+        <h2 className="cck-title text-xl mb-4">{t('comms.sentMessages')}</h2>
         {sentError ? (
-          <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
+          <div className="bg-danger-50 border border-danger-200 rounded-sm p-4">
             <p className="text-danger-700 font-medium">{t('common.error')}</p>
           </div>
         ) : sentLoading || !sentMessages ? (
@@ -361,10 +362,10 @@ export default function CommunicationsPage() {
         ) : sentMessages.length === 0 ? (
           <EmptyState title={t('comms.noSent')} />
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="cck-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-gray-500 border-b bg-gray-50">
+                <tr className="text-muted border-b bg-canvas">
                   <th className="px-6 py-3 text-start">{locale === 'ar' ? t('comms.subjectAr') : t('comms.subjectEn')}</th>
                   <th className="px-6 py-3 text-start">{t('comms.targetAudience')}</th>
                   <th className="px-6 py-3 text-start">{t('comms.recipientsLabel')}</th>
@@ -374,25 +375,25 @@ export default function CommunicationsPage() {
               </thead>
               <tbody>
                 {sentMessages.map((msg) => (
-                  <tr key={msg.message_id} className="border-b border-gray-50 last:border-0">
+                  <tr key={msg.message_id} className="border-b border-line last:border-0">
                     <td className="px-6 py-4 font-medium">
                       {locale === 'ar' ? msg.subject_ar : msg.subject_en}
-                      <span className="block text-xs text-gray-400">
+                      <span className="block text-xs text-muted">
                         {locale === 'ar' ? msg.subject_en : msg.subject_ar}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{audienceLabel(msg.target_audience)}</td>
-                    <td className="px-6 py-4 text-gray-600">{msg.recipients_count.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-body">{audienceLabel(msg.target_audience)}</td>
+                    <td className="px-6 py-4 text-body">{msg.recipients_count.toLocaleString()}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-1 flex-wrap">
                         {msg.channels.map((ch) => (
-                          <span key={ch} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                          <span key={ch} className="px-2 py-0.5 bg-canvas text-body rounded-sm text-xs">
                             {ch.toUpperCase()}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-500 text-xs">
+                    <td className="px-6 py-4 text-muted text-xs">
                       {new Date(msg.sent_at).toLocaleString(locale === 'ar' ? 'ar-KW' : 'en-GB')}
                     </td>
                   </tr>

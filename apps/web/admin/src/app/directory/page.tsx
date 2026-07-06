@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { SkeletonTable } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import ErrorState from '@/components/ErrorState';
+import PageHeader from '@/components/PageHeader';
 
 export default function DirectoryPage() {
   const { t, locale, dir } = useI18n();
@@ -18,18 +19,17 @@ export default function DirectoryPage() {
 
   return (
     <div dir={dir}>
-      <h1 className="text-2xl font-bold mb-1">{t('directory.title')}</h1>
-      <p className="text-sm text-[#737477] mb-6">{t('directory.subtitle')}</p>
+      <PageHeader title={t('directory.title')} subtitle={t('directory.subtitle')} />
 
       {!entries ? (
         <SkeletonTable rows={5} cols={4} />
       ) : entries.length === 0 ? (
         <EmptyState title={t('common.noData')} />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="cck-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[#737477] border-b bg-gray-50">
+              <tr className="text-muted border-b bg-canvas">
                 <th className="px-4 py-3 text-start font-medium">{t('directory.entryName')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('directory.dept')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('directory.entryEmail')}</th>
@@ -38,12 +38,12 @@ export default function DirectoryPage() {
             </thead>
             <tbody>
               {entries.map((e) => (
-                <tr key={e.id} className="border-b border-gray-50 last:border-0">
+                <tr key={e.id} className="border-b border-line last:border-0">
                   <td className="px-4 py-3">
                     <p className="font-medium">{locale === 'ar' ? e.name_ar : e.name_en}</p>
-                    <p className="text-xs text-[#737477]">{locale === 'ar' ? e.name_en : e.name_ar}</p>
+                    <p className="text-xs text-muted">{locale === 'ar' ? e.name_en : e.name_ar}</p>
                   </td>
-                  <td className="px-4 py-3 text-[#737477]">{locale === 'ar' ? e.department_ar : e.department_en}</td>
+                  <td className="px-4 py-3 text-muted">{locale === 'ar' ? e.department_ar : e.department_en}</td>
                   <td className="px-4 py-3" dir="ltr">
                     <a href={`mailto:${e.email}`} className="text-pair-600 hover:text-pair-700">{e.email}</a>
                   </td>

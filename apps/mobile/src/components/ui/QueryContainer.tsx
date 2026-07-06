@@ -1,18 +1,19 @@
 import React, { ReactNode } from 'react';
 import { RefreshControl, ScrollView, View, StyleSheet } from 'react-native';
 import { UseQueryResult } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ScreenSkeleton } from './Skeleton';
 import { EmptyState } from './EmptyState';
 import { Button } from './Button';
 import { Text } from './Text';
+import { Icon, IconName } from './Icon';
 import { useColors } from '../../theme/useColors';
-import { spacing } from '../../theme/spacing';
-import { Ionicons } from '@expo/vector-icons';
+import { spacing, borderRadius } from '../../theme/spacing';
 
 interface QueryContainerProps {
   query: UseQueryResult<any, any>;
   children: ReactNode;
-  emptyIcon?: string;
+  emptyIcon?: IconName;
   emptyTitle?: string;
   emptyMessage?: string;
   isEmpty?: boolean;
@@ -23,12 +24,13 @@ export function QueryContainer({
   query,
   children,
   emptyIcon,
-  emptyTitle = 'No data available',
+  emptyTitle,
   emptyMessage,
   isEmpty = false,
   scrollable = false,
 }: QueryContainerProps) {
   const colors = useColors();
+  const { t } = useTranslation();
 
   if (query.isLoading && !query.data) {
     return <ScreenSkeleton />;
@@ -37,14 +39,16 @@ export function QueryContainer({
   if (query.isError && !query.data) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="cloud-offline-outline" size={64} color={colors.error} />
-        <Text variant="h3" color={colors.textSecondary} style={styles.errorTitle}>
-          Connection Error
+        <View style={[styles.errorIconWrap, { backgroundColor: colors.brandRedWash }]}>
+          <Icon name="cloud-offline" size={36} color={colors.error} />
+        </View>
+        <Text variant="h3" color={colors.textPrimary} style={styles.errorTitle}>
+          {t('common.connectionError')}
         </Text>
         <Text variant="body" color={colors.textTertiary} style={styles.errorMessage}>
-          {query.error?.message || 'Could not load data. Please check your connection.'}
+          {query.error?.message || t('common.couldNotLoad')}
         </Text>
-        <Button title="Retry" onPress={() => query.refetch()} variant="primary" />
+        <Button title={t('common.tryAgain')} onPress={() => query.refetch()} variant="primary" />
       </View>
     );
   }
@@ -53,9 +57,9 @@ export function QueryContainer({
     return (
       <EmptyState
         icon={emptyIcon}
-        title={emptyTitle}
+        title={emptyTitle || t('common.noData')}
         message={emptyMessage}
-        actionLabel={query.isError ? 'Retry' : undefined}
+        actionLabel={query.isError ? t('common.tryAgain') : undefined}
         onAction={query.isError ? () => query.refetch() : undefined}
       />
     );
@@ -83,6 +87,14 @@ export function QueryContainer({
 
 const styles = StyleSheet.create({
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
-  errorTitle: { marginTop: spacing.base, marginBottom: spacing.xs, textAlign: 'center' },
+  errorIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.base,
+  },
+  errorTitle: { marginBottom: spacing.xs, textAlign: 'center' },
   errorMessage: { marginBottom: spacing.xl, textAlign: 'center', maxWidth: 280 },
 });

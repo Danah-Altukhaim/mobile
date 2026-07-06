@@ -5,11 +5,13 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type StudentLifeEventDetail, type EventNotification } from '@/lib/api';
+import { audienceChips } from '@/lib/audience';
 import { useI18n } from '@/lib/i18n';
 import { SkeletonPage } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import SendNotificationModal from '@/components/SendNotificationModal';
+import { ChevronIcon } from '@/components/icons';
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -57,47 +59,43 @@ export default function EventDetailPage() {
   }
   if (!event) return <SkeletonPage />;
 
-  const audienceLabel = t(`studentLife.audience.${event.audience}`) +
-    (event.audience === 'specific' && event.audience_detail_en
-      ? ` - ${isAr ? event.audience_detail_ar : event.audience_detail_en}` : '');
+  const audienceLabels = audienceChips(event, t, isAr);
 
   const infoCard = (title: string, value: string) => (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <p className="text-xs text-[#737477] mb-1">{title}</p>
+    <div className="cck-card p-4">
+      <p className="text-xs text-muted mb-1">{title}</p>
       <p className="font-medium">{value}</p>
     </div>
   );
 
   return (
     <div dir={dir}>
-      <Link href="/student-life" className="text-sm text-pair-600 hover:underline mb-4 inline-block">
-        {isAr ? '→' : '←'} {t('studentLife.backToList')}
+      <Link href="/student-life" className="text-sm text-pair-600 hover:underline mb-4 inline-flex items-center gap-1">
+        <ChevronIcon dir="start" className="w-3.5 h-3.5 shrink-0" />{t('studentLife.backToList')}
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{isAr ? event.title_ar : event.title_en}</h1>
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-              event.scope === 'internal' ? 'bg-pair-50 text-pair-700' : 'bg-gold-50 text-gold-700'
-            }`}>
+            <h1 className="cck-title">{isAr ? event.title_ar : event.title_en}</h1>
+            <span className="px-2 py-0.5 rounded-sm text-xs font-medium cck-chip-neutral">
               {t(`studentLife.scope.${event.scope}`)}
             </span>
           </div>
-          <p className="text-sm text-[#737477] mt-1">{isAr ? event.title_en : event.title_ar}</p>
+          <p className="text-sm text-muted mt-1">{isAr ? event.title_en : event.title_ar}</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`px-2.5 py-1 rounded text-xs font-medium ${
-            event.registration_open ? 'bg-oasis-50 text-oasis-700' : 'bg-gray-100 text-gray-600'
+          <span className={`px-2.5 py-1 rounded-sm text-xs font-medium ${
+            event.registration_open ? 'cck-chip-positive' : 'cck-chip-neutral'
           }`}>
             {event.registration_open ? t('studentLife.registrationOpen') : t('studentLife.registrationClosed')}
           </span>
           <button onClick={toggleRegistration} disabled={busy}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50">
+            className="px-3 py-2 border border-line-strong rounded-sm text-sm font-medium hover:bg-canvas disabled:opacity-50">
             {event.registration_open ? t('studentLife.closeRegistration') : t('studentLife.openRegistration')}
           </button>
           <button onClick={() => setShowNotify(true)}
-            className="px-3 py-2 bg-pair-600 text-white rounded-lg text-sm font-medium hover:bg-pair-700">
+            className="px-3 py-2 bg-pair-600 text-white rounded-sm text-sm font-medium hover:bg-pair-700">
             {t('studentLife.sendNotification')}
           </button>
         </div>
@@ -111,39 +109,43 @@ export default function EventDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-3">{t('studentLife.audienceReach')}</h2>
-          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-[#222] mb-2">
-            {audienceLabel}
-          </span>
-          <p className="text-sm text-[#737477]">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {audienceLabels.map((labelText, i) => (
+              <span key={i} className="inline-flex px-2 py-0.5 rounded-sm text-xs font-medium bg-canvas text-ink">
+                {labelText}
+              </span>
+            ))}
+          </div>
+          <p className="text-sm text-muted">
             {t('studentLife.audienceReachDesc', { value: event.audience_size.toLocaleString() })}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-3">{t('studentLife.description')}</h2>
-          <p className="text-sm text-[#222]">
+          <p className="text-sm text-ink">
             {(isAr ? event.description_ar : event.description_en) || '-'}
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <div className="cck-card p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">{t('studentLife.notificationHistory')}</h2>
         {event.notifications.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('studentLife.noNotifications')}</p>
+          <p className="text-sm text-muted">{t('studentLife.noNotifications')}</p>
         ) : (
           <div className="space-y-3">
             {event.notifications.map((n) => (
-              <div key={n.id} className="border border-gray-100 rounded-lg p-3">
+              <div key={n.id} className="border border-line rounded-sm p-3">
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-medium text-sm">{n.title}</p>
-                  <span className="text-xs text-[#737477] shrink-0">
+                  <span className="text-xs text-muted shrink-0">
                     {new Date(n.sent_at).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB')}
                   </span>
                 </div>
-                <p className="text-sm text-[#737477] mt-1">{n.body}</p>
-                <p className="text-xs text-[#737477] mt-2">
+                <p className="text-sm text-muted mt-1">{n.body}</p>
+                <p className="text-xs text-muted mt-2">
                   {t('studentLife.sentTo')}: {n.target === 'registered'
                     ? t('studentLife.registrantsTitle')
                     : t('studentLife.audienceReach')} · {t('studentLife.recipientsCount', { value: n.recipients })}
@@ -154,8 +156,8 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <h2 className="text-lg font-semibold px-6 py-4 border-b border-gray-100">
+      <div className="cck-card overflow-hidden">
+        <h2 className="text-lg font-semibold px-6 py-4 border-b border-line">
           {t('studentLife.registrantsTitle')} ({event.registrants.length})
         </h2>
         {event.registrants.length === 0 ? (
@@ -165,7 +167,7 @@ export default function EventDetailPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[#737477] border-b bg-gray-50">
+              <tr className="text-muted border-b bg-canvas">
                 <th className="px-6 py-3 text-start font-medium">{t('studentLife.registrantName')}</th>
                 <th className="px-6 py-3 text-start font-medium">{t('studentLife.registrantMajor')}</th>
                 <th className="px-6 py-3 text-start font-medium">{t('studentLife.registrantYear')}</th>
@@ -174,14 +176,14 @@ export default function EventDetailPage() {
             </thead>
             <tbody>
               {event.registrants.map((r) => (
-                <tr key={r.student_id} className="border-b border-gray-50 last:border-0">
+                <tr key={r.student_id} className="border-b border-line last:border-0">
                   <td className="px-6 py-3">
                     <p className="font-medium">{isAr ? r.name_ar : r.name_en}</p>
-                    <p className="text-xs text-[#737477]">{r.student_id}</p>
+                    <p className="text-xs text-muted">{r.student_id}</p>
                   </td>
-                  <td className="px-6 py-3 text-[#222]">{isAr ? r.major_ar : r.major_en}</td>
-                  <td className="px-6 py-3 text-[#737477]">{t(`studentLife.year.${r.year}`)}</td>
-                  <td className="px-6 py-3 text-[#737477]">{fmtDate(r.registered_at)}</td>
+                  <td className="px-6 py-3 text-ink">{isAr ? r.major_ar : r.major_en}</td>
+                  <td className="px-6 py-3 text-muted">{t(`studentLife.year.${r.year}`)}</td>
+                  <td className="px-6 py-3 text-muted">{fmtDate(r.registered_at)}</td>
                 </tr>
               ))}
             </tbody>

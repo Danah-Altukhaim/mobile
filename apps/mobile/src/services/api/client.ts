@@ -1,11 +1,15 @@
 import type { ApiResponse } from '@masari/shared';
 import { mockResponses } from './mock-data';
 
-const BASE_URL = 'http://localhost:3000';
-const USE_MOCK = true; // Set to false when backend is running
+// Point at the API gateway. Override per-environment with EXPO_PUBLIC_API_URL
+// (e.g. the LAN IP on a physical device, or an alternate gateway port).
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const USE_MOCK = false; // Live backend; falls back to mock automatically if a request fails
 
 class ApiClient {
-  private accessToken: string | null = null;
+  // Dev convenience: seed a bearer token from env so authenticated endpoints
+  // work before a real SSO login. Replaced by setAccessToken() after login.
+  private accessToken: string | null = process.env.EXPO_PUBLIC_DEV_TOKEN ?? null;
 
   setAccessToken(token: string | null) {
     this.accessToken = token;

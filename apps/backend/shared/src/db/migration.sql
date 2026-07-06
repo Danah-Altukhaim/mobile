@@ -306,8 +306,30 @@ CREATE TABLE admin_users (
   UNIQUE (university_id, email)
 );
 
+-- Advising meetings (scheduled by an advisor/admin, shown on the student's calendar)
+CREATE TABLE advising_meetings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID NOT NULL REFERENCES students(id),
+  type TEXT NOT NULL DEFAULT 'general',
+  title_ar TEXT NOT NULL,
+  title_en TEXT NOT NULL,
+  advisor_ar TEXT NOT NULL,
+  advisor_en TEXT NOT NULL,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  location_ar TEXT NOT NULL DEFAULT '',
+  location_en TEXT NOT NULL DEFAULT '',
+  notes_ar TEXT,
+  notes_en TEXT,
+  status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+  created_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+
 -- Indexes
 CREATE INDEX idx_students_university ON students(university_id);
+CREATE INDEX idx_advising_meetings_student ON advising_meetings(student_id, scheduled_at);
 CREATE INDEX idx_enrollments_student ON enrollments(student_id);
 CREATE INDEX idx_enrollments_term ON enrollments(term_id);
 CREATE INDEX idx_fees_student_term ON fees(student_id, term_id);

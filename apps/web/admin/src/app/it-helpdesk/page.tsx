@@ -8,20 +8,21 @@ import { useAuth } from '@/lib/auth';
 import { SkeletonTable } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import ErrorState from '@/components/ErrorState';
+import StatusBadge, { type LifecycleStatus } from '@/components/StatusBadge';
+import PageHeader from '@/components/PageHeader';
 
 const IT_KEY = ['it', 'tickets'] as const;
 const CATEGORIES: (ITCategory | 'all')[] = ['all', 'account_access', 'sis_lms', 'device'];
 
-const STATUS_STYLE: Record<ITTicket['status'], string> = {
-  open: 'bg-gold-50 text-gold-700',
-  in_progress: 'bg-pair-50 text-pair-700',
-  resolved: 'bg-oasis-50 text-oasis-700',
-};
+const toLifecycle = (s: ITTicket['status']): LifecycleStatus =>
+  s === 'open' ? 'not_started'
+  : s === 'in_progress' ? 'pending'
+  : 'completed';
 
 const CATEGORY_STYLE: Record<ITCategory, string> = {
-  account_access: 'bg-pair-50 text-pair-700',
-  sis_lms: 'bg-gold-50 text-gold-700',
-  device: 'bg-gray-100 text-gray-700',
+  account_access: 'cck-chip-neutral',
+  sis_lms: 'cck-chip-neutral',
+  device: 'cck-chip-neutral',
 };
 
 export default function ITHelpdeskPage() {
@@ -75,18 +76,17 @@ export default function ITHelpdeskPage() {
 
   return (
     <div dir={dir}>
-      <h1 className="text-2xl font-bold mb-1">{t('itHelpdesk.title')}</h1>
-      <p className="text-sm text-[#737477] mb-4">{t('itHelpdesk.subtitle')}</p>
+      <PageHeader title={t('itHelpdesk.title')} subtitle={t('itHelpdesk.subtitle')} />
 
       <div className="mb-4 flex flex-wrap gap-2">
         {CATEGORIES.map((c) => (
           <button
             key={c}
             onClick={() => setCategory(c)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+            className={`px-3 py-1.5 rounded-sm text-sm font-medium border ${
               category === c
                 ? 'bg-pair-600 text-white border-pair-600'
-                : 'bg-white text-[#737477] border-gray-300 hover:bg-gray-50'
+                : 'bg-white text-muted border-line-strong hover:bg-canvas'
             }`}
           >
             {c === 'all' ? `${t('itHelpdesk.allCategories')} · ${openCount}` : t(`itHelpdesk.category.${c}`)}
@@ -99,10 +99,10 @@ export default function ITHelpdeskPage() {
       ) : filtered.length === 0 ? (
         <EmptyState title={t('common.noData')} />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="cck-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[#737477] border-b bg-gray-50">
+              <tr className="text-muted border-b bg-canvas">
                 <th className="px-4 py-3 text-start font-medium">{t('itHelpdesk.ticket')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('requests.student')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('itHelpdesk.problem')}</th>
@@ -113,35 +113,31 @@ export default function ITHelpdeskPage() {
             </thead>
             <tbody>
               {filtered.map((x) => (
-                <tr key={x.id} className="border-b border-gray-50 last:border-0 align-top">
+                <tr key={x.id} className="border-b border-line last:border-0 align-top">
                   <td className="px-4 py-3">
-                    <p className="font-mono text-xs text-[#222]">{x.id}</p>
-                    <p className="text-xs text-[#737477] mt-0.5">{fmtDate(x.created_at)}</p>
+                    <p className="font-mono text-xs text-ink">{x.id}</p>
+                    <p className="text-xs text-muted mt-0.5">{fmtDate(x.created_at)}</p>
                   </td>
                   <td className="px-4 py-3">
                     <p className="font-medium">{locale === 'ar' ? x.student_name_ar : x.student_name_en}</p>
-                    <p className="text-xs text-[#737477]">{x.student_id}</p>
+                    <p className="text-xs text-muted">{x.student_id}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${CATEGORY_STYLE[x.category]}`}>
+                    <span className={`px-1.5 py-0.5 rounded-sm text-[11px] font-medium ${CATEGORY_STYLE[x.category]}`}>
                       {t(`itHelpdesk.category.${x.category}`)}
                     </span>
-                    <p className="text-[#222] mt-1">{t(`itHelpdesk.problem.${x.problem_key}`)}</p>
-                    <p className="text-xs text-[#737477] mt-0.5">{x.description}</p>
+                    <p className="text-ink mt-1">{t(`itHelpdesk.problem.${x.problem_key}`)}</p>
+                    <p className="text-xs text-muted mt-0.5">{x.description}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-[#222]">
+                    <span className="px-2 py-0.5 rounded-sm text-xs font-medium bg-canvas text-ink">
                       {t(`dept.${x.origin_department}`)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLE[x.status]}`}>
-                      {x.status === 'open' ? t('status.pending')
-                        : x.status === 'in_progress' ? t('status.ongoing')
-                        : t('status.resolved')}
-                    </span>
+                    <StatusBadge status={toLifecycle(x.status)} />
                     {x.assigned_to_en && (
-                      <p className="text-xs text-[#737477] mt-1">
+                      <p className="text-xs text-muted mt-1">
                         {locale === 'ar' ? x.assigned_to_ar : x.assigned_to_en}
                       </p>
                     )}
@@ -153,7 +149,7 @@ export default function ITHelpdeskPage() {
                           <button
                             onClick={() => assignToMe(x.id)}
                             disabled={busy === x.id + 'assign'}
-                            className="px-2.5 py-1 border border-gray-300 rounded text-xs hover:bg-gray-50 disabled:opacity-50"
+                            className="btn btn-outline btn-sm"
                           >
                             {t('itHelpdesk.assignToMe')}
                           </button>
@@ -161,7 +157,7 @@ export default function ITHelpdeskPage() {
                         <button
                           onClick={() => setStatus(x.id, 'resolved')}
                           disabled={busy === x.id + 'resolved'}
-                          className="px-2.5 py-1 bg-oasis-500 text-white rounded text-xs font-medium hover:bg-oasis-600 disabled:opacity-50"
+                          className="px-2.5 py-1 bg-pair-600 text-white rounded-sm text-xs font-medium hover:bg-pair-700 disabled:opacity-50"
                         >
                           {t('itHelpdesk.markResolved')}
                         </button>

@@ -186,3 +186,58 @@ export async function getDegreeAudit(studentId: string) {
     })),
   };
 }
+
+export interface CreateAdvisingMeetingInput {
+  student_id: string;
+  type?: string;
+  title_ar: string;
+  title_en: string;
+  advisor_ar: string;
+  advisor_en: string;
+  scheduled_at: string;
+  location_ar?: string;
+  location_en?: string;
+  notes_ar?: string | null;
+  notes_en?: string | null;
+  created_by?: string | null;
+}
+
+/** Advising meetings scheduled for a student, newest upcoming first. */
+export async function listAdvisingMeetings(studentId: string) {
+  const result = await query(
+    `SELECT id, student_id, type, title_ar, title_en, advisor_ar, advisor_en,
+            scheduled_at, location_ar, location_en, notes_ar, notes_en, status
+     FROM advising_meetings
+     WHERE student_id = $1 AND deleted_at IS NULL AND status <> 'cancelled'
+     ORDER BY scheduled_at ASC`,
+    [studentId],
+  );
+  return result.rows;
+}
+
+/** Schedule an advising meeting for a student (advisor/admin action). */
+export async function createAdvisingMeeting(input: CreateAdvisingMeetingInput) {
+  const result = await query(
+    `INSERT INTO advising_meetings
+       (student_id, type, title_ar, title_en, advisor_ar, advisor_en, scheduled_at,
+        location_ar, location_en, notes_ar, notes_en, created_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     RETURNING id, student_id, type, title_ar, title_en, advisor_ar, advisor_en,
+               scheduled_at, location_ar, location_en, notes_ar, notes_en, status`,
+    [
+      input.student_id,
+      input.type ?? 'general',
+      input.title_ar,
+      input.title_en,
+      input.advisor_ar,
+      input.advisor_en,
+      input.scheduled_at,
+      input.location_ar ?? '',
+      input.location_en ?? '',
+      input.notes_ar ?? null,
+      input.notes_en ?? null,
+      input.created_by ?? null,
+    ],
+  );
+  return result.rows[0];
+}

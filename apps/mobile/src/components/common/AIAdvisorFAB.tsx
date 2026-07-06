@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Icon } from '../ui/Icon';
 import { colors } from '../../theme/colors';
+import { borderRadius } from '../../theme/spacing';
 import { useUIStore } from '../../store/ui.store';
 import { useDirection } from '../../hooks/useDirection';
 
@@ -27,7 +28,7 @@ const styles = StyleSheet.create({
     bottom: 90,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: borderRadius.xl,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -43,7 +44,6 @@ const styles = StyleSheet.create({
     top: 2,
     width: 12,
     height: 12,
-    borderRadius: 6,
     backgroundColor: colors.brandRed,
     borderWidth: 2,
     borderColor: colors.textInverse,

@@ -1,121 +1,454 @@
 @import 'tailwindcss';
 @source "../../";
 
-/* CCK Brand - Canadian College of Kuwait
- * Tokens extracted from cck.edu.kw (see /CCK_BRAND.md).
- * Primary green #006341, lime accent #76B82A, red #e20613.
- * Gotham is proprietary → Montserrat is used as the geometric substitute.
- * Hind is loaded for body copy; Noto Sans Arabic for Arabic.
- */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Hind:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+/* ============================================================================
+ * CCK-Hub Admin - Brand system
+ * Canadian College of Kuwait. Tokens follow "branding book updated.pdf"
+ * (CCK Student Hub Docs), NOT the public website CSS.
+ *
+ *   CCK Green        #006341   PMS 3425C   - primary. Headlines, chrome,
+ *                                            flat backgrounds, the main colour.
+ *   New Growth Green #76B82A   PMS 368C    - accents, indicators, separators,
+ *                                            hovers, secondary fills.
+ *   CCK Red (leaf)   #FF0000   PMS 032C    - brand graphics ONLY (leaf, swoosh,
+ *                                            chevron motif). Used sparingly.
+ *   Greyscale        70% / 78% black tints for text/separation.
+ *
+ * Typography: Gotham (Latin) + GE SS Two (Arabic) - both proprietary.
+ * They are named FIRST in every stack so that dropping the licensed
+ * .woff2 files into /public/fonts auto-activates them (see @font-face below).
+ * Until then we render with the closest free substitutes:
+ *   Gotham   → Montserrat (geometric grotesque)
+ *   GE SS Two → Tajawal / IBM Plex Sans Arabic (modern geometric Arabic)
+ * ========================================================================== */
 
-@theme {
-  /* ── Primary - CCK Green (rt-primary #006341) ──
-   * Token name kept as `pair-*` so existing Tailwind usage
-   * (bg-pair-500, text-pair-600, ...) rebrands without edits.
-   * 500 and 600 intentionally pin to the brand green so both
-   * `bg-pair-500` (indicators) and `bg-pair-600` (buttons) look right.
-   * Hover/darker shades step from 600 → 700 → 800 → 900.
-   */
-  --color-pair-50:  #F0F9EE;
-  --color-pair-100: #E6F2E2;
-  --color-pair-200: #C5E0BD;
-  --color-pair-300: #9DCA90;
-  --color-pair-400: #3EB75E;
-  --color-pair-500: #006341;
-  --color-pair-600: #006341;
-  --color-pair-700: #005A3A;
-  --color-pair-800: #004D32;
-  --color-pair-900: #003D27;
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
 
-  /* ── Secondary - CCK Lime (rt-secondary #76B82A) ──
-   * 500 = brand. 600/700/800 step monotonically darker so
-   * `hover:bg-oasis-600` and `text-oasis-700` read correctly.
-   */
-  --color-oasis-50:  #F0F9E7;
-  --color-oasis-100: #E6F2E2;
-  --color-oasis-200: #C8E5B0;
-  --color-oasis-300: #A8D968;
-  --color-oasis-500: #76B82A;
-  --color-oasis-600: #5A9020;
-  --color-oasis-700: #467018;
-  --color-oasis-800: #2C4A0F;
-
-  /* ── Warning - CCK orange (color-warning #FF8F3C) ── */
-  --color-gold-50:  #FFF4E5;
-  --color-gold-100: #FFE9CC;
-  --color-gold-500: #FF8F3C;
-  --color-gold-600: #E67328;
-  --color-gold-700: #C05E1F;
-
-  /* ── Danger - CCK Red (rt-red-primary-2 #e20613) ── */
-  --color-danger-50:  #FCE5E7;
-  --color-danger-100: #FBC8CA;
-  --color-danger-200: #F79098;
-  --color-danger-400: #ED3D47;
-  --color-danger-500: #E20613;
-  --color-danger-600: #E20613;
-  --color-danger-700: #A30010;
-  --color-danger-900: #560008;
-
-  /* ── Shadows (Neutral Black base) ── */
-  --shadow-xs: 0 1px 2px rgba(30,30,30,0.05);
-  --shadow-sm: 0 2px 4px rgba(30,30,30,0.08);
-  --shadow-md: 0 4px 12px rgba(30,30,30,0.10);
-  --shadow-lg: 0 8px 24px rgba(30,30,30,0.12);
-  --shadow-xl: 0 16px 48px rgba(30,30,30,0.16);
-
-  /* ── Border radius - CCK uses very tight 3px on all interactives.
-   * No pill buttons, no large rounded cards. `full` reserved for avatars.
-   * Re-pointing Tailwind's radius scale rebrands `rounded-lg`,
-   * `rounded-xl`, `rounded-2xl` usages app-wide.
-   */
-  --radius-xs: 3px;
-  --radius-sm: 3px;
-  --radius-md: 3px;
-  --radius-lg: 3px;
-  --radius-xl: 3px;
-  --radius-2xl: 6px;
-  --radius-3xl: 8px;
-
-  /* ── Font families ──
-   * Gotham is proprietary → Montserrat (geometric sans) substitutes.
-   * Hind is CCK's English body face. Noto Sans Arabic for Arabic.
-   */
-  --font-heading: 'Montserrat', 'Gotham', system-ui, sans-serif;
-  --font-body: 'Hind', system-ui, sans-serif;
-  --font-arabic: 'Noto Sans Arabic', 'Cairo', system-ui, sans-serif;
+/* --- Licensed brand fonts (drop files into /public/fonts to activate) ----- */
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Book'), url('/fonts/Gotham-Book.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Medium'), url('/fonts/Gotham-Medium.woff2') format('woff2');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Bold'), url('/fonts/Gotham-Bold.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: local('Gotham Black'), url('/fonts/Gotham-Black.woff2') format('woff2');
+  font-weight: 800 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'GE SS Two';
+  src: local('GE SS Two'), url('/fonts/GESSTwo-Medium.woff2') format('woff2');
+  font-weight: 400 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'GE SS Two';
+  src: local('GE SS Two Bold'), url('/fonts/GESSTwo-Bold.woff2') format('woff2');
+  font-weight: 600 800; font-style: normal; font-display: swap;
 }
 
-/* ── Base typography ──
- * Body color = CCK --rt-body (#737477), headings = CCK --rt-heading (#222222).
- */
+@theme {
+  /* ── Primary - CCK Green (#006341). Token kept as `pair-*` so the
+   * existing bg-pair-600 / text-pair-600 usage rebrands without edits. ── */
+  --color-pair-50:  #ECF4F0;
+  --color-pair-100: #D2E7DD;
+  --color-pair-200: #A7CFBC;
+  --color-pair-300: #6FB096;
+  --color-pair-400: #2E8765;
+  --color-pair-500: #006341;
+  --color-pair-600: #006341;
+  --color-pair-700: #005135;
+  --color-pair-800: #003F29;
+  --color-pair-900: #002E1E;
+  /* Deep "pine" chrome - sidebar / dark brand surfaces */
+  --color-pine:     #00472F;
+  --color-pine-700: #003D29;
+  --color-pine-900: #002A1C;
+
+  /* ── New Growth Green (#76B82A). Accents, indicators, separators, hovers.
+   * 500 = brand. Darker steps keep white text legible on fills. ── */
+  --color-oasis-50:  #F1F8E7;
+  --color-oasis-100: #E1F0CA;
+  --color-oasis-200: #C6E29C;
+  --color-oasis-300: #A6D165;
+  --color-oasis-400: #8FC73F;
+  --color-oasis-500: #76B82A;
+  --color-oasis-600: #5E9620;
+  --color-oasis-700: #487317;
+  --color-oasis-800: #345210;
+
+  /* Amber is not a brand colour and is banned from the UI. Status speaks in
+   * two signals only: green (positive/active) and red (negative/blocking);
+   * everything in flight is neutral. */
+
+  /* ── Danger - controlled UI red for destructive/error states.
+   * Distinct from the pure brand leaf red, which is reserved for graphics. ── */
+  --color-danger-50:  #FDEAEA;
+  --color-danger-100: #FACECE;
+  --color-danger-200: #F39B9B;
+  --color-danger-400: #E5484D;
+  --color-danger-500: #D21F26;
+  --color-danger-600: #C01620;
+  --color-danger-700: #930F18;
+  --color-danger-900: #5C080E;
+
+  /* ── Brand leaf red (#FF0000) - maple leaf, swoosh, chevron motif only. ── */
+  --color-leaf: #FF0000;
+
+  /* ── Neutrals - 70%/78% black greyscale, warmed a hair toward the brand. ── */
+  --color-ink:    #1C1F1D;  /* headings */
+  --color-body:   #565A57;  /* body copy (~70% black) */
+  --color-muted:  #7C817D;  /* secondary text */
+  --color-line:   #E4E7E4;  /* hairline borders */
+  --color-line-strong: #CFD4CF;
+  --color-canvas: #F1F3F1;  /* app background (faint green-grey) */
+  --color-panel:  #FFFFFF;
+
+  /* ── Shadows - soft, low, neutral ── */
+  --shadow-xs: 0 1px 2px rgba(0,42,28,0.05);
+  --shadow-sm: 0 1px 3px rgba(0,42,28,0.07);
+  --shadow-md: 0 4px 14px rgba(0,42,28,0.08);
+  --shadow-lg: 0 10px 30px rgba(0,42,28,0.12);
+  --shadow-xl: 0 20px 50px rgba(0,42,28,0.16);
+
+  /* ── Radius - CCK is sharp & geometric. Near-zero everywhere. ── */
+  --radius-xs: 0px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 3px;
+  --radius-2xl: 4px;
+  --radius-3xl: 6px;
+
+  /* ── Font families ── */
+  --font-heading: 'Gotham', 'Montserrat', system-ui, sans-serif;
+  --font-body:    'Gotham', 'Montserrat', system-ui, sans-serif;
+  --font-arabic:  'GE SS Two', 'Tajawal', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+
+  /* ── Type ramp — one considered scale, not ad-hoc sizes. Every size
+   * carries its own line-height and optical tracking (San-Francisco-style:
+   * tighter as it gets larger, neutral when small). Arabic overrides
+   * letter-spacing to 0 globally, so the negative tracking is Latin-only. ── */
+  --text-xs:   0.6875rem;           /* 11 - micro labels, table headers   */
+  --text-xs--line-height: 1.45;
+  --text-xs--letter-spacing: 0em;
+  --text-sm:   0.8125rem;           /* 13 - secondary / captions          */
+  --text-sm--line-height: 1.5;
+  --text-sm--letter-spacing: -0.006em;
+  --text-base: 0.9375rem;           /* 15 - body workhorse                */
+  --text-base--line-height: 1.55;
+  --text-base--letter-spacing: -0.011em;
+  --text-lg:   1.0625rem;           /* 17 - card / section titles         */
+  --text-lg--line-height: 1.4;
+  --text-lg--letter-spacing: -0.019em;
+  --text-xl:   1.3125rem;           /* 21 - page sub-hero                 */
+  --text-xl--line-height: 1.3;
+  --text-xl--letter-spacing: -0.021em;
+  --text-2xl:  1.625rem;            /* 26 - page title                    */
+  --text-2xl--line-height: 1.2;
+  --text-2xl--letter-spacing: -0.024em;
+  --text-3xl:  2rem;                /* 32 - KPI figures                   */
+  --text-3xl--line-height: 1.05;
+  --text-3xl--letter-spacing: -0.026em;
+}
+
+/* ============================================================================
+ * Base
+ * ========================================================================== */
 body {
-  font-family: 'Hind', system-ui, sans-serif;
-  color: #222222;
+  font-family: var(--font-body);
+  color: var(--color-body);
+  background: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Montserrat', 'Gotham', system-ui, sans-serif;
-  color: #222222;
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--color-ink);
+    letter-spacing: -0.021em;
+    text-wrap: balance;
+  }
 }
 
-/* Arabic containers use Noto Sans Arabic.
- * CCK rule: never add letter-spacing to Arabic (breaks ligatures),
- * line-height bumped so ligatures aren't clipped.
- * `!important` on letter-spacing because Tailwind utilities like
- * `tracking-wider` have equal specificity and would otherwise win. */
+/* Arabic: GE SS Two / substitutes. Never letter-space Arabic (breaks
+ * ligatures); roomier line-height so ascenders/ligatures aren't clipped. */
 [dir="rtl"],
 [lang="ar"],
 [dir="rtl"] *,
 [lang="ar"] * {
   letter-spacing: 0 !important;
 }
-
 [dir="rtl"],
 [lang="ar"] {
-  font-family: 'Noto Sans Arabic', 'Cairo', system-ui, sans-serif;
-  line-height: 1.8;
+  font-family: var(--font-arabic);
+  line-height: 1.85;
+}
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3,
+[lang="ar"] h1, [lang="ar"] h2, [lang="ar"] h3 {
+  font-family: var(--font-arabic);
+  letter-spacing: 0 !important;
+}
+
+::selection { background: var(--color-pair-100); color: var(--color-ink); }
+
+*:focus-visible {
+  outline: 2px solid var(--color-pair-500);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+ * Brand component layer - the shared visual vocabulary pages compose with.
+ * ========================================================================== */
+@layer components {
+
+  /* --- Eyebrow / kicker label above page & section titles ---------------- */
+  /* Restraint: a quiet micro-label, not a shout. Muted by default so the
+   * title and content carry the page; tracking eased from 0.18em to 0.11em. */
+  .cck-eyebrow {
+    font-family: var(--font-heading);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  [dir="rtl"] .cck-eyebrow { letter-spacing: 0 !important; }
+
+  .cck-title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.625rem;
+    line-height: 1.12;
+    letter-spacing: -0.024em;
+    color: var(--color-ink);
+  }
+  [dir="rtl"] .cck-title { letter-spacing: 0 !important; line-height: 1.3; }
+
+  /* The signature brand mark: a short green tick with a red-leaf lead - the
+   * flattened swoosh echo, kept small and used as an accent, not a banner. */
+  .cck-rule {
+    position: relative;
+    height: 2px;
+    background: var(--color-pair-600);
+  }
+  .cck-rule::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 26px;
+    height: 2px;
+    background: var(--color-leaf);
+  }
+
+  /* Full-bleed hairline - the mature, Apple-nav-bar way to close a header or
+   * separate a band. Preferred over the coloured rule for everyday headers. */
+  .cck-hairline { height: 1px; background: var(--color-line); }
+
+  /* Detail-page section label ("Contact", "Workflow", "Actions"...). One quiet
+   * uppercase micro-header, colour left to the caller (muted / ink / danger). */
+  .cck-section-label {
+    font-family: var(--font-heading);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+  [dir="rtl"] .cck-section-label {
+    letter-spacing: 0 !important;
+    font-family: var(--font-arabic);
+  }
+
+  /* Diagonal chevron motif (from the brand pattern sheet). Use sparingly as
+   * an accent band - e.g. login hero, sidebar footer. */
+  .cck-chevrons {
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--color-pair-600) 0, var(--color-pair-600) 14px,
+      var(--color-oasis-500) 14px, var(--color-oasis-500) 22px,
+      transparent 22px, transparent 40px
+    );
+  }
+
+  /* --- Surfaces ----------------------------------------------------------- */
+  .cck-card {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xs);
+  }
+  .cck-panel {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+  }
+
+  /* --- Buttons ------------------------------------------------------------ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: -0.006em;
+    line-height: 1;
+    min-height: 2.25rem;              /* 36 - consistent control height   */
+    padding: 0 0.875rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, opacity .1s ease;
+    white-space: nowrap;
+  }
+  .btn:active:not(:disabled) { opacity: 0.9; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  [dir="rtl"] .btn { font-family: var(--font-arabic); letter-spacing: 0; }
+
+  /* Primary = CCK green (brand "main colour", accessible white text). */
+  .btn-primary { background: var(--color-pair-600); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--color-pair-700); }
+
+  /* Accent - folded into the primary green. One green, one voice. */
+  .btn-accent { background: var(--color-pair-600); color: #fff; }
+  .btn-accent:hover:not(:disabled) { background: var(--color-pair-700); }
+
+  /* Outline / secondary. */
+  .btn-outline {
+    background: var(--color-panel);
+    color: var(--color-ink);
+    border-color: var(--color-line-strong);
+  }
+  .btn-outline:hover:not(:disabled) { background: var(--color-canvas); border-color: var(--color-pair-300); }
+
+  /* Ghost. */
+  .btn-ghost { background: transparent; color: var(--color-body); }
+  .btn-ghost:hover:not(:disabled) { background: var(--color-pair-50); color: var(--color-pair-700); }
+
+  /* Destructive. */
+  .btn-danger { background: var(--color-danger-600); color: #fff; }
+  .btn-danger:hover:not(:disabled) { background: var(--color-danger-700); }
+
+  .btn-sm { min-height: 1.875rem; padding: 0 0.625rem; font-size: 0.75rem; }
+  .btn-lg { min-height: 2.75rem; padding: 0 1.25rem; font-size: 0.875rem; }
+  .btn-block { width: 100%; }
+
+  /* --- Form controls ------------------------------------------------------ */
+  .cck-input,
+  .cck-select,
+  .cck-textarea {
+    width: 100%;
+    min-height: 2.25rem;             /* 36 - matches control height       */
+    background: var(--color-panel);
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    color: var(--color-ink);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .cck-textarea { min-height: 5rem; }
+  .cck-input::placeholder,
+  .cck-textarea::placeholder { color: var(--color-muted); }
+  .cck-input:focus,
+  .cck-select:focus,
+  .cck-textarea:focus {
+    outline: none;
+    border-color: var(--color-pair-500);
+    box-shadow: 0 0 0 2px var(--color-pair-100);
+  }
+  .cck-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: -0.003em;
+    color: var(--color-body);
+    margin-bottom: 0.375rem;
+  }
+
+  /* --- Tables ------------------------------------------------------------- */
+  .cck-table { width: 100%; font-size: 0.875rem; border-collapse: collapse; }
+  .cck-table thead th {
+    text-align: start;
+    font-family: var(--font-heading);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-line);
+    background: transparent;
+  }
+  [dir="rtl"] .cck-table thead th { letter-spacing: 0 !important; font-family: var(--font-arabic); }
+  .cck-table tbody td {
+    padding: 0.6875rem 0.75rem;
+    border-bottom: 1px solid var(--color-line);
+    color: var(--color-body);
+  }
+  .cck-table tbody tr:last-child td { border-bottom: 0; }
+  .cck-table tfoot td { padding: 0.75rem; color: var(--color-body); }
+  .cck-table tbody tr.cck-row-link { cursor: pointer; transition: background-color .12s ease; }
+  .cck-table tbody tr.cck-row-link:hover { background: var(--color-pair-50); }
+
+  /* --- Badges / pills ----------------------------------------------------- */
+  .cck-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    padding: 0.1875rem 0.4375rem;
+    border-radius: var(--radius-sm);
+  }
+  [dir="rtl"] .cck-badge { letter-spacing: 0 !important; }
+
+  /* Status speaks in exactly three voices. Neutral for anything in flight
+   * or informational; green only for positive/active; red only for
+   * negative/blocking. No other status colour exists. */
+  .cck-chip-neutral {
+    background: var(--color-canvas);
+    color: var(--color-body);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  }
+  .cck-chip-positive {
+    background: var(--color-pair-50);
+    color: var(--color-pair-700);
+    box-shadow: inset 0 0 0 1px var(--color-pair-100);
+  }
+  .cck-chip-negative {
+    background: var(--color-danger-50);
+    color: var(--color-danger-700);
+    box-shadow: inset 0 0 0 1px var(--color-danger-100);
+  }
+}
+
+/* Print scope — when printing, only the .print-area (e.g. the Acceptance
+   Letter or Appeal outcome email) is sent to paper. */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 2.5rem 3rem;
+    background: #fff;
+  }
 }

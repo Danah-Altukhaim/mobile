@@ -4,20 +4,23 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, type StudentLifeEvent, type ClubJoinRequest } from '@/lib/api';
+import { audienceChips } from '@/lib/audience';
 import { useI18n } from '@/lib/i18n';
 import { SkeletonTable } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import ErrorState from '@/components/ErrorState';
 import CreateEventModal from '@/components/CreateEventModal';
+import RejectReasonDialog from '@/components/RejectReasonDialog';
+import StatusBadge, { type LifecycleStatus } from '@/components/StatusBadge';
+import PageHeader from '@/components/PageHeader';
 
 const EVENTS_KEY = ['student-life', 'events'] as const;
 const CLUBS_KEY = ['student-life', 'club-requests'] as const;
 
-const REQ_STYLE: Record<ClubJoinRequest['status'], string> = {
-  pending: 'bg-gold-50 text-gold-700',
-  approved: 'bg-oasis-50 text-oasis-700',
-  rejected: 'bg-danger-50 text-danger-700',
-};
+const toLifecycle = (s: ClubJoinRequest['status']): LifecycleStatus =>
+  s === 'pending' ? 'not_started'
+  : s === 'approved' ? 'completed'
+  : 'rejected';
 
 export default function StudentLifePage() {
   const { t, locale, dir } = useI18n();
@@ -25,6 +28,7 @@ export default function StudentLifePage() {
   const [tab, setTab] = useState<'events' | 'clubs'>('events');
   const [busy, setBusy] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<ClubJoinRequest | null>(null);
 
   const { data: events, isError: evError, isLoading: evLoading, refetch: evRefetch } =
     useQuery<StudentLifeEvent[]>({
@@ -49,16 +53,22 @@ export default function StudentLifePage() {
     }
   };
 
-  const decideClub = async (id: string, decision: 'approved' | 'rejected') => {
+  const decideClub = async (id: string, decision: 'approved' | 'rejected', reason?: string) => {
     setBusy(id + decision);
     try {
-      await api.decideClubRequest(id, decision);
+      await api.decideClubRequest(id, decision, reason);
       qc.setQueryData<ClubJoinRequest[]>(CLUBS_KEY, (prev) =>
         prev?.map((c) => c.id === id ? { ...c, status: decision } : c) ?? prev,
       );
     } finally {
       setBusy(null);
     }
+  };
+
+  const confirmRejectClub = async (reason: string) => {
+    if (!rejectTarget) return;
+    await decideClub(rejectTarget.id, 'rejected', reason);
+    setRejectTarget(null);
   };
 
   const onCreated = (ev: StudentLifeEvent) => {
@@ -79,26 +89,24 @@ export default function StudentLifePage() {
 
   return (
     <div dir={dir}>
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">{t('studentLife.title')}</h1>
-          <p className="text-sm text-[#737477]">{t('studentLife.subtitle')}</p>
-        </div>
-        {tab === 'events' && (
+      <PageHeader
+        title={t('studentLife.title')}
+        subtitle={t('studentLife.subtitle')}
+        actions={tab === 'events' ? (
           <button
             onClick={() => setShowCreate(true)}
-            className="shrink-0 px-4 py-2 bg-pair-600 text-white rounded-lg text-sm font-medium hover:bg-pair-700"
+            className="btn btn-primary"
           >
             + {t('studentLife.createEvent')}
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
-      <div className="flex gap-2 border-b border-gray-200 mb-4">
+      <div className="flex gap-2 border-b border-line mb-4">
         <button
           onClick={() => setTab('events')}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-            tab === 'events' ? 'text-pair-600 border-pair-600' : 'text-[#737477] border-transparent'
+            tab === 'events' ? 'text-pair-600 border-pair-600' : 'text-muted border-transparent'
           }`}
         >
           {t('studentLife.tabEvents')} ({events?.length ?? 0})
@@ -106,7 +114,7 @@ export default function StudentLifePage() {
         <button
           onClick={() => setTab('clubs')}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-            tab === 'clubs' ? 'text-pair-600 border-pair-600' : 'text-[#737477] border-transparent'
+            tab === 'clubs' ? 'text-pair-600 border-pair-600' : 'text-muted border-transparent'
           }`}
         >
           {t('studentLife.tabClubs')}{pendingClubs > 0 ? ` · ${pendingClubs}` : ''}
@@ -124,39 +132,38 @@ export default function StudentLifePage() {
               <Link
                 key={e.id}
                 href={`/student-life/${e.id}`}
-                className="block bg-white rounded-xl border border-gray-200 p-5 hover:border-pair-300 hover:shadow-sm transition"
+                className="block cck-card p-5 hover:border-pair-300 hover:shadow-sm transition"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold">{locale === 'ar' ? e.title_ar : e.title_en}</p>
-                    <p className="text-xs text-[#737477] mt-0.5">{fmtDate(e.date)}</p>
+                    <p className="text-xs text-muted mt-0.5">{fmtDate(e.date)}</p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    e.scope === 'internal' ? 'bg-pair-50 text-pair-700' : 'bg-gold-50 text-gold-700'
-                  }`}>
+                  <span className="px-2 py-0.5 rounded-sm text-xs font-medium cck-chip-neutral">
                     {t(`studentLife.scope.${e.scope}`)}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-[#222]">
-                    {t('studentLife.audience')}: {t(`studentLife.audience.${e.audience}`)}
-                    {e.audience === 'specific' && e.audience_detail_en
-                      ? ` - ${locale === 'ar' ? e.audience_detail_ar : e.audience_detail_en}` : ''}
-                  </span>
-                  <span className="text-xs text-[#737477]">
+                  <span className="text-xs font-medium text-muted">{t('studentLife.audience')}:</span>
+                  {audienceChips(e, t, locale === 'ar').map((labelText, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-sm text-xs font-medium bg-canvas text-ink">
+                      {labelText}
+                    </span>
+                  ))}
+                  <span className="text-xs text-muted">
                     {t('studentLife.registrations', { value: e.registrations })}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mt-4">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    e.registration_open ? 'bg-oasis-50 text-oasis-700' : 'bg-gray-100 text-gray-600'
+                  <span className={`px-2 py-0.5 rounded-sm text-xs font-medium ${
+                    e.registration_open ? 'cck-chip-positive' : 'cck-chip-neutral'
                   }`}>
                     {e.registration_open ? t('studentLife.registrationOpen') : t('studentLife.registrationClosed')}
                   </span>
                   <button
                     onClick={(ev) => { ev.preventDefault(); toggleRegistration(e.id, !e.registration_open); }}
                     disabled={busy === e.id}
-                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-50"
+                    className="btn btn-outline btn-sm"
                   >
                     {e.registration_open ? t('studentLife.closeRegistration') : t('studentLife.openRegistration')}
                   </button>
@@ -173,10 +180,10 @@ export default function StudentLifePage() {
         ) : clubReqs.length === 0 ? (
           <EmptyState title={t('common.noData')} />
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="cck-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[#737477] border-b bg-gray-50">
+                <tr className="text-muted border-b bg-canvas">
                   <th className="px-4 py-3 text-start font-medium">{t('requests.student')}</th>
                   <th className="px-4 py-3 text-start font-medium">{t('studentLife.club')}</th>
                   <th className="px-4 py-3 text-start font-medium">{t('studentLife.clubAdvisor')}</th>
@@ -186,19 +193,15 @@ export default function StudentLifePage() {
               </thead>
               <tbody>
                 {clubReqs.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-50 last:border-0">
+                  <tr key={c.id} className="border-b border-line last:border-0">
                     <td className="px-4 py-3">
                       <p className="font-medium">{locale === 'ar' ? c.student_name_ar : c.student_name_en}</p>
-                      <p className="text-xs text-[#737477]">{c.student_id} · {fmtDate(c.submitted_at)}</p>
+                      <p className="text-xs text-muted">{c.student_id} · {fmtDate(c.submitted_at)}</p>
                     </td>
-                    <td className="px-4 py-3 text-[#222]">{locale === 'ar' ? c.club_ar : c.club_en}</td>
-                    <td className="px-4 py-3 text-[#737477]">{locale === 'ar' ? c.advisor_ar : c.advisor_en}</td>
+                    <td className="px-4 py-3 text-ink">{locale === 'ar' ? c.club_ar : c.club_en}</td>
+                    <td className="px-4 py-3 text-muted">{locale === 'ar' ? c.advisor_ar : c.advisor_en}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${REQ_STYLE[c.status]}`}>
-                        {c.status === 'pending' ? t('status.pending')
-                          : c.status === 'approved' ? t('status.approved')
-                          : t('status.rejected')}
-                      </span>
+                      <StatusBadge status={toLifecycle(c.status)} />
                     </td>
                     <td className="px-4 py-3 text-end">
                       {c.status === 'pending' && (
@@ -206,14 +209,14 @@ export default function StudentLifePage() {
                           <button
                             onClick={() => decideClub(c.id, 'approved')}
                             disabled={busy === c.id + 'approved'}
-                            className="px-2.5 py-1 bg-pair-600 text-white rounded text-xs font-medium hover:bg-pair-700 disabled:opacity-50"
+                            className="btn btn-primary btn-sm text-xs"
                           >
                             {t('studentLife.approveJoin')}
                           </button>
                           <button
-                            onClick={() => decideClub(c.id, 'rejected')}
+                            onClick={() => setRejectTarget(c)}
                             disabled={busy === c.id + 'rejected'}
-                            className="px-2.5 py-1 border border-danger-200 text-danger-700 rounded text-xs hover:bg-danger-50 disabled:opacity-50"
+                            className="btn btn-danger btn-sm"
                           >
                             {t('studentLife.rejectJoin')}
                           </button>
@@ -231,6 +234,17 @@ export default function StudentLifePage() {
       {showCreate && (
         <CreateEventModal onClose={() => setShowCreate(false)} onCreated={onCreated} />
       )}
+
+      <RejectReasonDialog
+        open={rejectTarget !== null}
+        title={t('studentLife.rejectJoin')}
+        subject={rejectTarget
+          ? `${locale === 'ar' ? rejectTarget.student_name_ar : rejectTarget.student_name_en} · ${locale === 'ar' ? rejectTarget.club_ar : rejectTarget.club_en}`
+          : undefined}
+        busy={busy === (rejectTarget?.id ?? '') + 'rejected'}
+        onConfirm={confirmRejectClub}
+        onCancel={() => setRejectTarget(null)}
+      />
     </div>
   );
 }

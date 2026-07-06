@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} dir={dir}>
-      <body className="min-h-screen bg-[#F6F6F6]">
+      <body className="min-h-screen bg-canvas text-body">
         <I18nProvider initialLocale={locale}>
           <QueryProvider>
             <AuthProvider>

@@ -8,6 +8,7 @@ import type {
   Assignment,
   PaymentDashboard,
   DegreeAudit,
+  AdvisingAppointment,
 } from '@masari/shared';
 import { apiClient } from './client';
 
@@ -30,6 +31,9 @@ export const academicApi = {
   getDegreeAudit: () => apiClient.get<DegreeAudit>(API_PATHS.STUDENT_DEGREE_AUDIT),
 
   getCalendar: () => apiClient.get<any[]>(API_PATHS.STUDENT_CALENDAR),
+
+  getAdvisingMeetings: () =>
+    apiClient.get<AdvisingAppointment[]>(API_PATHS.STUDENT_ADVISING_MEETINGS),
 
   getAvailableCourses: () => apiClient.get<any[]>(API_PATHS.STUDENT_AVAILABLE_COURSES),
 

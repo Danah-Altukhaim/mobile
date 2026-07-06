@@ -14,6 +14,7 @@ export function registerRoutes(app: Express): void {
   app.get('/api/v1/students/me/fees', authenticate, controller.getFees);
   app.get('/api/v1/students/me/degree-audit', authenticate, controller.getDegreeAudit);
   app.get('/api/v1/students/me/calendar', authenticate, controller.getCalendar);
+  app.get('/api/v1/students/me/advising-meetings', authenticate, controller.getAdvisingMeetings);
   app.get('/api/v1/students/me/available-courses', authenticate, controller.getAvailableCourses);
   app.post('/api/v1/students/me/register-course/:courseId', authenticate, controller.registerCourse);
 }

@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Card from '@/components/Card';
+import PageHeader from '@/components/PageHeader';
 import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
 import { api } from '@/lib/api';
@@ -50,7 +51,7 @@ export default function EngagementPage() {
   const heatmapMax = heatmap ? Math.max(...heatmap.data.flat()) : 1;
   const getHeatColor = (value: number) => {
     const intensity = value / heatmapMax;
-    if (intensity < 0.2) return 'bg-pair-50 text-gray-500';
+    if (intensity < 0.2) return 'bg-pair-50 text-muted';
     if (intensity < 0.4) return 'bg-pair-100 text-pair-700';
     if (intensity < 0.6) return 'bg-pair-200 text-pair-800';
     if (intensity < 0.8) return 'bg-pair-400 text-white';
@@ -59,7 +60,7 @@ export default function EngagementPage() {
 
   return (
     <div dir={dir}>
-      <h1 className="text-2xl font-bold mb-6">{t('engagement.title')}</h1>
+      <PageHeader title={t('engagement.title')} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card title={t('engagement.dau')} value={data.daily_active_users.toLocaleString()} />
@@ -72,18 +73,18 @@ export default function EngagementPage() {
 
       {/* Feature Usage Heatmap Grid */}
       {heatmap && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+        <div className="cck-card p-6 mb-8">
           <div className="mb-4">
             <h2 className="text-lg font-semibold">{t('engagement.featureHeatmap')}</h2>
-            <p className="text-sm text-gray-500">{t('engagement.heatmapDesc')}</p>
+            <p className="text-sm text-muted">{t('engagement.heatmapDesc')}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr>
-                  <th className="text-start pb-2 pe-2 w-32 text-gray-500 font-medium" />
+                  <th className="text-start pb-2 pe-2 w-32 text-muted font-medium" />
                   {heatmap.hours.map((h, i) => (
-                    <th key={i} className="pb-2 text-center text-gray-500 font-medium px-0.5">
+                    <th key={i} className="pb-2 text-center text-muted font-medium px-0.5">
                       {locale === 'ar' ? heatmap.hours_ar[i] : h}
                     </th>
                   ))}
@@ -92,13 +93,13 @@ export default function EngagementPage() {
               <tbody>
                 {heatmap.data.map((row, fi) => (
                   <tr key={fi}>
-                    <td className="py-1 pe-2 text-sm text-gray-600 whitespace-nowrap">
+                    <td className="py-1 pe-2 text-sm text-body whitespace-nowrap">
                       {locale === 'ar' ? heatmap.features_ar[fi] : heatmap.features[fi]}
                     </td>
                     {row.map((val, hi) => (
                       <td key={hi} className="p-0.5">
                         <div
-                          className={`rounded h-8 flex items-center justify-center text-[10px] font-medium ${getHeatColor(val)}`}
+                          className={`rounded-sm h-8 flex items-center justify-center text-[10px] font-medium ${getHeatColor(val)}`}
                           title={`${val} ${t('engagement.sessions')}`}
                         >
                           {val}
@@ -111,7 +112,7 @@ export default function EngagementPage() {
             </table>
           </div>
           {/* Legend */}
-          <div className="flex items-center gap-3 mt-4 text-xs text-gray-500">
+          <div className="flex items-center gap-3 mt-4 text-xs text-muted">
             <span>{t('engagement.users')}:</span>
             <span aria-hidden className="text-[11px]">{t('engagement.legendLow')}</span>
             <div className="flex items-center gap-0.5" role="img" aria-label={`${t('engagement.legendLow')} → ${t('engagement.legendHigh')}`}>
@@ -127,15 +128,15 @@ export default function EngagementPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('engagement.byCohort')}</h2>
           <div className="space-y-3">
             {data.engagement_by_cohort.map((c) => (
               <div key={c.cohort} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">{t('engagement.classOf', { value: c.cohort })}</span>
+                <span className="text-body">{t('engagement.classOf', { value: c.cohort })}</span>
                 <div>
                   <span className="font-medium">{c.active_users.toLocaleString()}</span>
-                  <span className="text-gray-400 text-xs ms-2">
+                  <span className="text-muted text-xs ms-2">
                     {t('engagement.avgMin', { value: String(c.avg_session_min) })}
                   </span>
                 </div>
@@ -144,17 +145,17 @@ export default function EngagementPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('engagement.byMajor')}</h2>
           <div className="space-y-3">
             {data.engagement_by_major.map((m) => (
               <div key={m.major_en} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">
+                <span className="text-body">
                   {locale === 'ar' ? m.major_ar : m.major_en}
                 </span>
                 <div>
                   <span className="font-medium">{m.active_users.toLocaleString()}</span>
-                  <span className="text-gray-400 text-xs ms-2">
+                  <span className="text-muted text-xs ms-2">
                     {t('engagement.mSuffix', { value: String(m.avg_session_min) })}
                   </span>
                 </div>
@@ -163,17 +164,17 @@ export default function EngagementPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('engagement.byYear')}</h2>
           <div className="space-y-3">
             {data.engagement_by_year.map((y) => (
               <div key={y.year} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">
+                <span className="text-body">
                   {locale === 'ar' ? y.year_ar : y.year}
                 </span>
                 <div>
                   <span className="font-medium">{y.active_users.toLocaleString()}</span>
-                  <span className="text-gray-400 text-xs ms-2">
+                  <span className="text-muted text-xs ms-2">
                     {t('engagement.mSuffix', { value: String(y.avg_session_min) })}
                   </span>
                 </div>
@@ -183,7 +184,7 @@ export default function EngagementPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+      <div className="cck-card p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4">{t('engagement.peakHours')}</h2>
         <div className="flex items-end gap-3" style={{ height: 200 }}>
           {data.peak_hours.map((p) => {
@@ -197,14 +198,14 @@ export default function EngagementPage() {
                   className="w-full bg-pair-500 rounded-t-md transition-all"
                   style={{ height: `${heightPercent}%`, minHeight: 4 }}
                 />
-                <span className="text-xs text-gray-500 mt-2">{p.label_en}</span>
+                <span className="text-xs text-muted mt-2">{p.label_en}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+      <div className="cck-card p-6 mb-4">
         <h2 className="text-lg font-semibold mb-4">{t('engagement.trend')}</h2>
         <div className="flex items-end gap-2" style={{ height: 120 }}>
           {data.peak_hours.map((p) => {
@@ -220,12 +221,12 @@ export default function EngagementPage() {
           })}
         </div>
         <div className="flex justify-between mt-2">
-          <span className="text-xs text-gray-400">{data.peak_hours[0]?.label_en}</span>
-          <span className="text-xs text-gray-400">{data.peak_hours[data.peak_hours.length - 1]?.label_en}</span>
+          <span className="text-xs text-muted">{data.peak_hours[0]?.label_en}</span>
+          <span className="text-xs text-muted">{data.peak_hours[data.peak_hours.length - 1]?.label_en}</span>
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 mt-4">
+      <p className="text-xs text-muted mt-4">
         {t('common.period')}: {data.period.start} - {data.period.end}
       </p>
     </div>

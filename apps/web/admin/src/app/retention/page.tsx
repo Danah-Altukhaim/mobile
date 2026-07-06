@@ -10,6 +10,23 @@ import Pagination from '@/components/Pagination';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import StatusBadge, { type LifecycleStatus } from '@/components/StatusBadge';
+import PageHeader from '@/components/PageHeader';
+
+// Retention outcomes are stored as one of the four canonical statuses (or
+// empty string for "not set"). Older mock data may still contain legacy
+// labels like "Resolved" / "Ongoing" / "Escalated" / "Withdrew" - normalize
+// those on read so the badge renders consistently.
+const normalizeOutcome = (raw: string): LifecycleStatus | '' => {
+  if (!raw) return '';
+  if (raw === 'pending' || raw === 'completed' || raw === 'rejected' || raw === 'not_started') {
+    return raw;
+  }
+  if (raw === 'Resolved') return 'completed';
+  if (raw === 'Ongoing') return 'pending';
+  if (raw === 'Escalated' || raw === 'Withdrew') return 'rejected';
+  return '';
+};
 
 const RETENTION_KEY = ['retention', 'overview'] as const;
 const AT_RISK_KEY = ['retention', 'atRisk'] as const;
@@ -156,9 +173,8 @@ export default function RetentionPage() {
 
   const riskColor = (level: string) => {
     switch (level) {
-      case 'high': return 'bg-danger-100 text-danger-700';
-      case 'medium': return 'bg-gold-100 text-gold-700';
-      default: return 'bg-blue-100 text-blue-700';
+      case 'high': return 'cck-chip-negative';
+      default: return 'cck-chip-neutral';
     }
   };
 
@@ -180,11 +196,11 @@ export default function RetentionPage() {
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'}>
-      <h1 className="text-2xl font-bold mb-6">{t('retention.title')}</h1>
+      <PageHeader title={t('retention.title')} />
 
       {/* Success banner */}
       {successBanner && (
-        <div role="status" aria-live="polite" className="mb-4 px-4 py-3 bg-oasis-50 border border-oasis-200 text-oasis-800 text-sm rounded-lg">
+        <div role="status" aria-live="polite" className="mb-4 px-4 py-3 bg-pair-50 border border-pair-200 text-pair-800 text-sm rounded-sm">
           {successBanner}
         </div>
       )}
@@ -198,47 +214,47 @@ export default function RetentionPage() {
 
       {/* Risk Recalculation Info */}
       {recalcInfo && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-6 flex items-center justify-between flex-wrap gap-2 text-sm">
+        <div className="bg-canvas border border-line rounded-sm px-4 py-3 mb-6 flex items-center justify-between flex-wrap gap-2 text-sm">
           <div className="flex items-center gap-4">
-            <span className="font-medium text-gray-700">{t('retention.riskRecalc')}</span>
-            <span className="text-gray-500">
+            <span className="font-medium text-body">{t('retention.riskRecalc')}</span>
+            <span className="text-muted">
               {t('retention.lastCalculated')}: {new Date(recalcInfo.last_calculated).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
-            <span className="text-gray-500">
+            <span className="text-muted">
               {t('retention.nextScheduled')}: {new Date(recalcInfo.next_scheduled).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB', { month: 'short', day: 'numeric' })}
             </span>
           </div>
-          <span className="text-xs text-gray-400">{t('retention.modelVersion')} {recalcInfo.model_version} &middot; {t('retention.recalcWeekly')}</span>
+          <span className="text-xs text-muted">{t('retention.modelVersion')} {recalcInfo.model_version} &middot; {t('retention.recalcWeekly')}</span>
         </div>
       )}
 
       {/* Follow-Up Reminders */}
       {reminders.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+        <div className="cck-card p-6 mb-8">
           <h2 className="text-lg font-semibold mb-4">{t('retention.followUpReminders')}</h2>
           <div className="space-y-3">
             {reminders.map((r) => (
-              <div key={r.id} className={`flex items-center justify-between p-3 rounded-lg border ${r.status === 'overdue' ? 'border-danger-200 bg-danger-50' : 'border-gold-200 bg-gold-50'}`}>
+              <div key={r.id} className={`flex items-center justify-between p-3 rounded-sm border ${r.status === 'overdue' ? 'border-danger-200 bg-danger-50' : 'border-line bg-canvas'}`}>
                 <div className="flex items-center gap-4">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${r.status === 'overdue' ? 'bg-danger-100 text-danger-700' : 'bg-gold-100 text-gold-700'}`}>
+                  <span className={`px-2 py-0.5 rounded-sm text-xs font-medium ${r.status === 'overdue' ? 'cck-chip-negative' : 'cck-chip-neutral'}`}>
                     {r.status === 'overdue' ? t('retention.reminderOverdue') : t('retention.reminderUpcoming')}
                   </span>
                   <div>
                     <Link href={`/retention/${r.student_id}`} className="text-sm font-medium text-pair-700 hover:underline">
                       {isAr ? r.student_name_ar : r.student_name_en}
                     </Link>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted">
                       {r.action} &middot; {t('retention.interventionOn', { value: new Date(r.intervention_date).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB') })}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted">
                     {t('retention.dueDate', { value: new Date(r.due_date).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB') })}
                   </span>
                   <button
                     onClick={() => handleDismissReminder(r.id)}
-                    className="text-xs text-gray-400 hover:text-gray-600"
+                    className="text-xs text-muted hover:text-body"
                   >
                     {t('retention.reminderDismiss')}
                   </button>
@@ -250,35 +266,35 @@ export default function RetentionPage() {
       )}
 
       {/* Retention Trend */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+      <div className="cck-card p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4">{t('retention.trend')}</h2>
         <div className="flex items-end gap-2" style={{ height: 160 }}>
           {retention.trend.map((point) => {
             const heightPct = ((point.rate - trendMin) / trendRange) * 80 + 20;
             return (
               <div key={point.month} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-xs text-gray-600 font-medium">{point.rate}%</span>
+                <span className="text-xs text-body font-medium">{point.rate}%</span>
                 <div
                   className="w-full rounded-t bg-pair-500 min-h-[4px]"
                   style={{ height: `${heightPct}%` }}
                 />
-                <span className="text-[10px] text-gray-400 truncate w-full text-center">{point.month}</span>
+                <span className="text-[10px] text-muted truncate w-full text-center">{point.month}</span>
               </div>
             );
           })}
         </div>
-        <div className="flex justify-between mt-2 text-xs text-gray-400">
+        <div className="flex justify-between mt-2 text-xs text-muted">
           <span>{t('retention.month')}</span>
           <span>{t('retention.rate_label')}</span>
         </div>
       </div>
 
       {/* Retention by College */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+      <div className="cck-card p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4">{t('retention.byCollege')}</h2>
         <table className="w-full text-sm">
           <thead>
-            <tr className={`${isAr ? 'text-right' : 'text-left'} text-gray-500 border-b`}>
+            <tr className={`${isAr ? 'text-right' : 'text-left'} text-muted border-b`}>
               <th className="pb-2">{t('retention.college')}</th>
               <th className="pb-2">{t('retention.enrolled')}</th>
               <th className="pb-2">{t('retention.retention')}</th>
@@ -286,13 +302,13 @@ export default function RetentionPage() {
           </thead>
           <tbody>
             {retention.retention_by_college.map((c) => (
-              <tr key={c.college_en} className="border-b border-gray-50">
+              <tr key={c.college_en} className="border-b border-line">
                 <td className="py-3">
                   {isAr ? c.college_ar : c.college_en}
                 </td>
                 <td className="py-3">{c.enrolled}</td>
                 <td className="py-3">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${c.retention_rate >= 95 ? 'bg-oasis-100 text-oasis-700' : c.retention_rate >= 93 ? 'bg-gold-100 text-gold-700' : 'bg-danger-100 text-danger-700'}`}>
+                  <span className={`px-2 py-0.5 rounded-sm text-xs font-medium ${c.retention_rate >= 93 ? 'cck-chip-neutral' : 'cck-chip-negative'}`}>
                     {c.retention_rate}%
                   </span>
                 </td>
@@ -303,35 +319,35 @@ export default function RetentionPage() {
       </div>
 
       {/* At-Risk Students */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="cck-card p-6">
         <h2 className="text-lg font-semibold mb-4">{t('retention.atRiskStudents')}</h2>
         <div className="space-y-4">
           {paginatedStudents.map((s) => (
-            <div key={s.id} className="border border-gray-100 rounded-lg p-4">
+            <div key={s.id} className="border border-line rounded-sm p-4">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <Link href={`/retention/${s.id}`} className="font-medium text-pair-700 hover:underline">
                     {isAr ? s.name_ar : s.name_en}
                   </Link>
-                  <span className={`text-gray-400 text-xs ${isAr ? 'mr-2' : 'ml-2'}`}>#{s.student_id}</span>
+                  <span className={`text-muted text-xs ${isAr ? 'mr-2' : 'ml-2'}`}>#{s.student_id}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${riskColor(s.risk_level)}`}>
+                  <span className={`px-2 py-0.5 rounded-sm text-xs font-medium ${riskColor(s.risk_level)}`}>
                     {riskLabel(s.risk_level)} - {Math.round(s.risk_score * 100)}
                   </span>
-                  <span className="text-sm text-gray-500">{t('retention.gpa', { value: String(s.gpa) })}</span>
+                  <span className="text-sm text-muted">{t('retention.gpa', { value: String(s.gpa) })}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 mb-2">
-                <p className="text-xs text-gray-500">{isAr && s.college_ar ? s.college_ar : s.college_en}</p>
+                <p className="text-xs text-muted">{isAr && s.college_ar ? s.college_ar : s.college_en}</p>
               </div>
-              <ul className="text-sm text-gray-600 space-y-1 mb-3">
+              <ul className="text-sm text-body space-y-1 mb-3">
                 {s.contributing_factors.map((f, i) => (
                   <li key={i}>{isAr ? `\u2022 ${f.factor_ar}` : `\u2022 ${f.factor_en}`}</li>
                 ))}
               </ul>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-muted">
                   {t('retention.lastActive', { value: new Date(s.last_active).toLocaleDateString(isAr ? 'ar-KW' : 'en-GB') })}
                 </span>
                 <div className="flex items-center gap-2">
@@ -340,7 +356,7 @@ export default function RetentionPage() {
                     onChange={(e) =>
                       setInterventionActions((prev) => ({ ...prev, [s.id]: e.target.value }))
                     }
-                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                    className="border border-line-strong rounded-sm px-2 py-1.5 text-sm"
                   >
                     {INTERVENTION_TYPES.map((it) => (
                       <option key={it.value} value={it.value}>{it.label}</option>
@@ -349,42 +365,36 @@ export default function RetentionPage() {
                   <button
                     onClick={() => requestIntervene(s.id)}
                     disabled={intervening === s.id}
-                    className="px-3 py-1.5 bg-pair-600 text-white text-sm rounded-lg hover:bg-pair-700 disabled:opacity-50"
+                    className="btn btn-primary btn-sm"
                   >
                     {intervening === s.id ? t('retention.scheduling') : t('retention.intervene')}
                   </button>
                 </div>
               </div>
               {/* Outcome Tracking */}
-              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+              <div className="mt-3 pt-3 border-t border-line flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{t('retention.outcome')}:</span>
-                  <select
-                    value={outcomes[s.id] || ''}
-                    onChange={(e) => handleOutcomeChange(s.id, e.target.value)}
-                    className="border border-gray-200 rounded px-2 py-1 text-xs"
-                  >
-                    <option value="">{t('status.notSet')}</option>
-                    <option value="Resolved">{t('status.resolved')}</option>
-                    <option value="Ongoing">{t('status.ongoing')}</option>
-                    <option value="Escalated">{t('status.escalated')}</option>
-                    <option value="Withdrew">{t('status.withdrew')}</option>
-                  </select>
-                  {outcomes[s.id] && (
-                    <span className={`px-2 py-0.5 rounded text-xs ${
-                      outcomes[s.id] === 'Resolved' ? 'bg-oasis-100 text-oasis-700' :
-                      outcomes[s.id] === 'Ongoing' ? 'bg-blue-100 text-blue-700' :
-                      outcomes[s.id] === 'Escalated' ? 'bg-danger-100 text-danger-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {outcomes[s.id] === 'Resolved' ? t('status.resolved') :
-                       outcomes[s.id] === 'Ongoing' ? t('status.ongoing') :
-                       outcomes[s.id] === 'Escalated' ? t('status.escalated') :
-                       t('status.withdrew')}
-                    </span>
-                  )}
+                  <span className="text-xs text-muted">{t('retention.outcome')}:</span>
+                  {(() => {
+                    const current = normalizeOutcome(outcomes[s.id] ?? '');
+                    return (
+                      <>
+                        <select
+                          value={current}
+                          onChange={(e) => handleOutcomeChange(s.id, e.target.value)}
+                          className="border border-line rounded-sm px-2 py-1 text-xs"
+                        >
+                          <option value="">{t('status.notSet')}</option>
+                          <option value="pending">{t('status.pending')}</option>
+                          <option value="completed">{t('status.completed')}</option>
+                          <option value="rejected">{t('status.rejected')}</option>
+                        </select>
+                        {current && <StatusBadge status={current} />}
+                      </>
+                    );
+                  })()}
                 </div>
-                <span className="text-xs text-gray-400">{t('retention.followUp')}</span>
+                <span className="text-xs text-muted">{t('retention.followUp')}</span>
               </div>
             </div>
           ))}

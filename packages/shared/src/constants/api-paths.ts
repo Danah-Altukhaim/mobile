@@ -17,6 +17,7 @@ export const API_PATHS = {
 
   STUDENT_REGISTER_COURSE: (courseId: string) => `${V1}/students/me/register-course/${courseId}`,
   STUDENT_CALENDAR: `${V1}/students/me/calendar`,
+  STUDENT_ADVISING_MEETINGS: `${V1}/students/me/advising-meetings`,
   STUDENT_AVAILABLE_COURSES: `${V1}/students/me/available-courses`,
 
   // Payments
@@ -25,8 +26,6 @@ export const API_PATHS = {
   PAYMENT_RECEIPT: (paymentId: string) => `${V1}/payments/${paymentId}/receipt`,
   PAYMENT_HISTORY: `${V1}/payments/history`,
   PAYMENT_INSTALLMENTS: `${V1}/payments/installments`,
-  PAYMENT_FINANCIAL_AID: `${V1}/payments/financial-aid`,
-  PAYMENT_REFUNDS: `${V1}/payments/refunds`,
 
   // AI
   AI_CHAT: `${V1}/ai/chat`,
@@ -47,6 +46,12 @@ export const API_PATHS = {
   CAMPUS_NEWS: `${V1}/campus/news`,
   CAMPUS_DINING: `${V1}/campus/dining`,
   CAMPUS_LOST_FOUND: `${V1}/campus/lost-found`,
+  CLASS_CHANNELS: `${V1}/campus/class-channels`,
+  CLASS_CHANNEL_DETAIL: (channelId: string) => `${V1}/campus/class-channels/${channelId}`,
+  CLASS_CHANNEL_POST: (channelId: string) => `${V1}/campus/class-channels/${channelId}/post`,
+  CLUB_CHANNELS: `${V1}/campus/club-channels`,
+  CLUB_CHANNEL_DETAIL: (channelId: string) => `${V1}/campus/club-channels/${channelId}`,
+  CLUB_CHANNEL_POST: (channelId: string) => `${V1}/campus/club-channels/${channelId}/post`,
 
   // Social
   SOCIAL_FEED: `${V1}/feed`,
@@ -67,6 +72,18 @@ export const API_PATHS = {
   // Files
   TRANSCRIPT_REQUESTS: `${V1}/files/transcript-requests`,
   TRANSCRIPT_REQUEST: `${V1}/files/transcript-request`,
+
+  // CCK-Hub Service Requests
+  SERVICE_REQUESTS: `${V1}/services/requests`,
+  SERVICE_REQUEST_DETAIL: (id: string) => `${V1}/services/requests/${id}`,
+  SERVICE_REQUEST_CANCEL: (id: string) => `${V1}/services/requests/${id}/cancel`,
+  SERVICE_REQUEST_AMEND_ATTACHMENT: (id: string, attachmentId: string) =>
+    `${V1}/services/requests/${id}/attachments/${attachmentId}/amend`,
+  SERVICE_REQUEST_CREATE: `${V1}/services/requests`,
+  SERVICE_CONTACT_DIRECTORY: `${V1}/services/contact-directory`,
+  SERVICE_EXCUSED_ABSENCE_POLICY: `${V1}/services/excused-absence/policy`,
+  SERVICE_SOCIAL_ALLOWANCE_REQUIREMENTS: `${V1}/services/social-allowance/requirements`,
+  SERVICE_APPEAL_WINDOW: `${V1}/services/appeals/window`,
 
   // Admin
   ADMIN_ANALYTICS_ENGAGEMENT: `${V1}/admin/analytics/engagement`,

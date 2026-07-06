@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
     "@masari/shared": "*",
     "@tanstack/react-query": "^5.100.9",
     "next": "14.2.21",

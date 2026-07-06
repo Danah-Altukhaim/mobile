@@ -5,12 +5,13 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
+import { canAccess } from '@/lib/roles';
 import ConfirmDialog from './ConfirmDialog';
 import {
   ChartIcon, HomeIcon, InboxIcon, GraduationIcon, HandHeartIcon, GavelIcon,
   AlertIcon, FlagIcon, ChatIcon, TrophyIcon, PhoneIcon, ShieldIcon,
-  CreditCardIcon, WalletIcon, BrainIcon, MegaphoneIcon, UsersIcon, GearIcon, ClipboardIcon,
-  WrenchIcon, BookIcon, SparklesIcon,
+  CreditCardIcon, WalletIcon, BrainIcon, MegaphoneIcon, MarketingIcon, UsersIcon, GearIcon, ClipboardIcon,
+  WrenchIcon, BookIcon, SparklesIcon, CalendarIcon, BuildingIcon, IdCardIcon,
   LogoutIcon, LanguageIcon, CloseIcon, CollapseChevron,
 } from './icons';
 
@@ -18,24 +19,28 @@ const nav = [
   { href: '/', labelKey: 'nav.dashboard', section: 'nav.workflows', icon: HomeIcon },
   { href: '/requests', labelKey: 'nav.requests', section: 'nav.workflows', icon: InboxIcon },
   { href: '/admissions', labelKey: 'nav.admissions', section: 'nav.workflows', icon: GraduationIcon },
+  { href: '/students', labelKey: 'nav.students', section: 'nav.workflows', icon: IdCardIcon },
   { href: '/equivalency', labelKey: 'nav.equivalency', section: 'nav.workflows', icon: ClipboardIcon },
   { href: '/catalog', labelKey: 'nav.catalog', section: 'nav.workflows', icon: BookIcon },
   { href: '/social-allowance', labelKey: 'nav.socialAllowance', section: 'nav.workflows', icon: HandHeartIcon },
   { href: '/appeals', labelKey: 'nav.appeals', section: 'nav.workflows', icon: GavelIcon },
   { href: '/fa-screen', labelKey: 'nav.faScreen', section: 'nav.workflows', icon: AlertIcon },
   { href: '/warnings', labelKey: 'nav.warnings', section: 'nav.workflows', icon: FlagIcon },
-  { href: '/attendance-policy', labelKey: 'nav.attendancePolicy', section: 'nav.workflows', icon: ClipboardIcon },
+  { href: '/calendar', labelKey: 'nav.calendar', section: 'nav.workflows', icon: CalendarIcon },
   { href: '/feedback', labelKey: 'nav.complaints', section: 'nav.workflows', icon: ChatIcon },
   { href: '/finance', labelKey: 'nav.finance', section: 'nav.workflows', icon: WalletIcon },
   { href: '/sport', labelKey: 'nav.sport', section: 'nav.workflows', icon: TrophyIcon },
   { href: '/student-life', labelKey: 'nav.studentLife', section: 'nav.workflows', icon: SparklesIcon },
   { href: '/it-helpdesk', labelKey: 'nav.itHelpdesk', section: 'nav.workflows', icon: WrenchIcon },
+  { href: '/facilities', labelKey: 'nav.facilities', section: 'nav.workflows', icon: BuildingIcon },
+  { href: '/event-requests', labelKey: 'nav.eventRequests', section: 'nav.workflows', icon: CalendarIcon },
   { href: '/directory', labelKey: 'nav.directory', section: 'nav.workflows', icon: PhoneIcon },
   { href: '/engagement', labelKey: 'nav.engagement', section: 'nav.analytics', icon: ChartIcon },
   { href: '/retention', labelKey: 'nav.retention', section: 'nav.analytics', icon: ShieldIcon },
   { href: '/payments', labelKey: 'nav.payments', section: 'nav.analytics', icon: CreditCardIcon },
   { href: '/ai-monitoring', labelKey: 'nav.aiAdvisor', section: 'nav.analytics', icon: BrainIcon },
   { href: '/communications', labelKey: 'nav.communications', section: 'nav.management', icon: MegaphoneIcon },
+  { href: '/marketing', labelKey: 'nav.marketing', section: 'nav.management', icon: MarketingIcon },
   { href: '/users', labelKey: 'nav.users', section: 'nav.management', icon: UsersIcon },
   { href: '/settings', labelKey: 'nav.settings', section: 'nav.config', icon: GearIcon },
   { href: '/audit-log', labelKey: 'nav.auditLog', section: 'nav.config', icon: ClipboardIcon },
@@ -103,31 +108,35 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
       <aside
         dir={dir}
         aria-label={t('nav.appName')}
-        className={`fixed inset-y-0 start-0 w-64 z-40 bg-[#F6F6F6] border-e border-[#D9D9D9] flex flex-col transition-transform duration-300 md:sticky md:top-0 md:h-screen md:z-auto md:transition-all ${widthClass} ${mobileTransform} shrink-0`}
+        className={`fixed inset-y-0 start-0 w-64 z-40 bg-pine text-white flex flex-col transition-transform duration-300 md:sticky md:top-0 md:h-screen md:z-auto md:transition-all ${widthClass} ${mobileTransform} shrink-0`}
       >
         {/* Header */}
         <div
-          className={`p-4 border-b border-[#D9D9D9] ${
+          className={`p-4 border-b border-white/10 ${
             collapsed ? 'md:flex-col md:items-center md:gap-3 flex items-center justify-between gap-2' : 'flex items-center justify-between gap-2'
           }`}
         >
           {!collapsed ? (
             <div className="min-w-0 flex items-center gap-2.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/cck-shield.png" alt="CCK" className="h-9 w-9 shrink-0" />
+              <span className="grid place-items-center h-9 w-9 shrink-0 bg-white rounded-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/cck-shield.png" alt="CCK" className="h-7 w-7" />
+              </span>
               <div className="min-w-0">
-                <h1 className="text-base font-bold text-[#222222] truncate leading-tight">{t('nav.appName')}</h1>
-                <p className="text-[11px] text-[#737477] mt-0.5 truncate">{t('nav.subtitle')}</p>
+                <h1 className="text-[0.9375rem] font-bold text-white truncate leading-tight tracking-tight">{t('nav.appName')}</h1>
+                <p className="text-[11px] text-white/50 mt-0.5 truncate">{t('nav.subtitle')}</p>
               </div>
             </div>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/cck-shield.png" alt="CCK" className="h-8 w-8" />
+            <span className="grid place-items-center h-8 w-8 bg-white rounded-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/cck-shield.png" alt="CCK" className="h-6 w-6" />
+            </span>
           )}
           {/* Mobile close button */}
           <button
             onClick={onMobileClose}
-            className="p-1.5 rounded-lg hover:bg-[#EEEEEE] text-[#737477] hover:text-[#222222] transition-colors shrink-0 md:hidden"
+            className="p-1.5 rounded-sm hover:bg-white/10 text-white/70 hover:text-white transition-colors shrink-0 md:hidden"
             aria-label={t('common.cancel')}
           >
             <CloseIcon />
@@ -135,7 +144,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           {/* Desktop collapse toggle */}
           <button
             onClick={toggleCollapse}
-            className="p-1.5 rounded-lg hover:bg-[#EEEEEE] text-[#737477] hover:text-[#222222] transition-colors shrink-0 hidden md:block"
+            className="p-1.5 rounded-sm hover:bg-white/10 text-white/70 hover:text-white transition-colors shrink-0 hidden md:block"
             title={collapsed ? t('nav.expand') : t('nav.collapse')}
             aria-label={collapsed ? t('nav.expand') : t('nav.collapse')}
           >
@@ -143,32 +152,32 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           </button>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - scoped to the signed-in department's workflows */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto" aria-label={t('nav.appName')}>
-          {nav.map((item, i) => {
+          {nav.filter((item) => canAccess(user?.role, item.href)).map((item, i, visible) => {
             const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            const showSection = i === 0 || nav[i - 1].section !== item.section;
+            const showSection = i === 0 || visible[i - 1].section !== item.section;
             const Icon = item.icon;
             return (
               <div key={item.href}>
                 {showSection && !collapsed && (
-                  <p className={`text-[11px] text-[#737477] uppercase tracking-wider font-semibold px-3 ${i > 0 ? 'mt-4' : ''} mb-1.5`}>
+                  <p className={`text-[10px] text-white/40 uppercase tracking-[0.1em] font-semibold px-3 ${i > 0 ? 'mt-5' : ''} mb-1.5`}>
                     {t(item.section)}
                   </p>
                 )}
                 {showSection && collapsed && i > 0 && (
-                  <div className="my-2 border-t border-[#D9D9D9] hidden md:block" />
+                  <div className="my-2 border-t border-white/10 hidden md:block" />
                 )}
                 <Link
                   href={item.href}
                   title={collapsed ? t(item.labelKey) : undefined}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors h-10 ${
+                  className={`relative flex items-center gap-3 px-3 py-2 rounded-sm text-sm transition-colors h-10 ${
                     collapsed ? 'md:justify-center' : ''
                   } ${
                     active
-                      ? 'bg-pair-50 text-pair-600 font-medium'
-                      : 'text-[#737477] hover:bg-[#EEEEEE] hover:text-[#222222]'
+                      ? 'bg-white text-pair-700 font-semibold before:absolute before:inset-y-1.5 before:start-0 before:w-[3px] before:bg-leaf'
+                      : 'text-white/75 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <span className="shrink-0"><Icon /></span>
@@ -180,26 +189,36 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
         </nav>
 
         {/* Bottom section */}
-        <div className="border-t border-[#D9D9D9] p-2 space-y-1">
+        <div className="border-t border-white/10 p-2 space-y-1">
           {user && (
-            <div className={`px-3 py-2 ${collapsed ? 'md:text-center' : ''}`}>
+            <div className={`px-2 py-2 ${collapsed ? 'md:text-center' : ''}`}>
               {collapsed ? (
                 <>
                   <div
-                    className="hidden md:flex w-8 h-8 mx-auto rounded-full bg-pair-500 text-white items-center justify-center text-xs font-bold"
+                    className="hidden md:flex w-8 h-8 mx-auto rounded-sm bg-white/15 text-white items-center justify-center text-xs font-bold"
                     title={displayName}
                   >
                     {displayName?.charAt(0)}
                   </div>
-                  <div className="md:hidden min-w-0">
-                    <p className="text-sm font-medium text-[#222222] truncate">{displayName}</p>
-                    <p className="text-xs text-[#737477] truncate">{user.role}</p>
+                  <div className="md:hidden min-w-0 flex items-center gap-2.5">
+                    <div className="w-8 h-8 shrink-0 rounded-sm bg-white/15 text-white flex items-center justify-center text-xs font-bold">
+                      {displayName?.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">{displayName}</p>
+                      <p className="text-xs text-white/55 truncate">{t(`role.${user.role}`)}</p>
+                    </div>
                   </div>
                 </>
               ) : (
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#222222] truncate">{displayName}</p>
-                  <p className="text-xs text-[#737477] truncate">{user.role}</p>
+                <div className="min-w-0 flex items-center gap-2.5">
+                  <div className="w-8 h-8 shrink-0 rounded-sm bg-white/15 text-white flex items-center justify-center text-xs font-bold">
+                    {displayName?.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{displayName}</p>
+                    <p className="text-xs text-white/55 truncate">{t(`role.${user.role}`)}</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -208,7 +227,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
           <button
             onClick={toggleLocale}
             title={t('nav.language')}
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-[#737477] hover:bg-[#EEEEEE] hover:text-[#222222] transition-colors ${
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-sm text-sm text-white/75 hover:bg-white/10 hover:text-white transition-colors ${
               collapsed ? 'md:justify-center' : ''
             }`}
           >
@@ -220,7 +239,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: Props) {
             onClick={() => setLogoutOpen(true)}
             title={collapsed ? t('nav.logout') : undefined}
             aria-label={collapsed ? t('nav.logout') : undefined}
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-[#737477] hover:bg-danger-50 hover:text-danger-600 transition-colors ${
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-sm text-sm text-white/75 hover:bg-danger-600 hover:text-white transition-colors ${
               collapsed ? 'md:justify-center' : ''
             }`}
           >

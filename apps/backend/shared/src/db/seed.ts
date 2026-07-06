@@ -27,19 +27,19 @@ async function seed() {
      RETURNING id`,
     [
       '550e8400-e29b-41d4-a716-446655440000',
-      'جامعة الخليج للعلوم والتكنولوجيا',
-      'Gulf University for Science and Technology',
-      'gust',
+      'الكلية الكندية في الكويت',
+      'Canadian College of Kuwait',
+      'cck',
       'KW',
-      '#1B4D3E',
-      '#D4AF37',
+      '#006341',
+      '#76B82A',
       'Asia/Kuwait',
       'KWD',
       'saml',
     ],
   );
   const universityId = uniResult.rows[0].id;
-  console.log('✅ University created: GUST');
+  console.log('✅ University created: CCK');
 
   // Term
   const termResult = await query(
@@ -61,13 +61,14 @@ async function seed() {
   const termId = termResult.rows[0]?.id || '660e8400-e29b-41d4-a716-446655440001';
   console.log('✅ Term created: Spring 2025-2026');
 
-  // Courses
+  // Courses — real CCK Diploma of Computer Programming, semester 3 (matches the
+  // mobile app's demo student). See packages/shared/src/data/courses.ts.
   const courses = [
-    { id: 'c001', code: 'CS101', name_ar: 'مقدمة في علوم الحاسب', name_en: 'Introduction to Computer Science', credits: 3, dept: 'CS' },
-    { id: 'c002', code: 'MATH201', name_ar: 'الرياضيات التطبيقية', name_en: 'Applied Mathematics', credits: 3, dept: 'MATH' },
-    { id: 'c003', code: 'ENG102', name_ar: 'اللغة الإنجليزية الأكاديمية', name_en: 'Academic English', credits: 3, dept: 'ENG' },
-    { id: 'c004', code: 'IS210', name_ar: 'نظم المعلومات الإدارية', name_en: 'Management Information Systems', credits: 3, dept: 'IS' },
-    { id: 'c005', code: 'BA100', name_ar: 'مبادئ إدارة الأعمال', name_en: 'Principles of Business Administration', credits: 3, dept: 'BA' },
+    { id: 'c001', code: 'CST2234', name_ar: 'تحليل وتصميم النظم', name_en: 'Systems Analysis & Design', credits: 4, dept: 'CST' },
+    { id: 'c002', code: 'CST2335', name_ar: 'برمجة الواجهة الرسومية للجوال', name_en: 'Mobile Graphical Interface Programming', credits: 4, dept: 'CST' },
+    { id: 'c003', code: 'CST8109', name_ar: 'برمجة الشبكات', name_en: 'Network Programming', credits: 4, dept: 'CST' },
+    { id: 'c004', code: 'CST8283', name_ar: 'برمجة الأعمال التجارية', name_en: 'Business Programming', credits: 4, dept: 'CST' },
+    { id: 'c005', code: 'CST8288', name_ar: 'البرمجة الشيئية مع انماط التصميم', name_en: 'Object-Oriented Programming with Design Patterns', credits: 4, dept: 'CST' },
   ];
 
   for (const c of courses) {
@@ -80,12 +81,14 @@ async function seed() {
   }
   console.log('✅ 5 courses created');
 
-  // Sections
+  // Sections — instructors are real CCK faculty (see packages/shared faculty
+  // data). Arabic faculty names aren't in the source docs, so name_en is used
+  // in both fields rather than fabricating a transliteration.
   const sections = [
-    { courseIdx: 0, instructor_ar: 'د. أحمد المطيري', instructor_en: 'Dr. Ahmed Al-Mutairi', slots: [{ day: 'sunday', start_time: '08:00', end_time: '09:30', room: 'B-201' }, { day: 'tuesday', start_time: '08:00', end_time: '09:30', room: 'B-201' }], room: 'B-201' },
-    { courseIdx: 1, instructor_ar: 'د. فاطمة الراشد', instructor_en: 'Dr. Fatima Al-Rashid', slots: [{ day: 'sunday', start_time: '10:00', end_time: '11:30', room: 'A-105' }, { day: 'tuesday', start_time: '10:00', end_time: '11:30', room: 'A-105' }], room: 'A-105' },
-    { courseIdx: 2, instructor_ar: 'أ. سارة العنزي', instructor_en: 'Ms. Sara Al-Enezi', slots: [{ day: 'monday', start_time: '13:00', end_time: '14:30', room: 'C-301' }, { day: 'wednesday', start_time: '13:00', end_time: '14:30', room: 'C-301' }], room: 'C-301' },
-    { courseIdx: 3, instructor_ar: 'د. محمد الشمري', instructor_en: 'Dr. Mohammed Al-Shammari', slots: [{ day: 'monday', start_time: '08:00', end_time: '09:30', room: 'D-102' }, { day: 'wednesday', start_time: '08:00', end_time: '09:30', room: 'D-102' }], room: 'D-102' },
+    { courseIdx: 0, instructor_ar: 'Ahmad Jaber Hadam Mayahi', instructor_en: 'Ahmad Jaber Hadam Mayahi', slots: [{ day: 'sunday', start_time: '08:00', end_time: '10:00', room: 'B-201' }, { day: 'tuesday', start_time: '08:00', end_time: '10:00', room: 'B-201' }], room: 'B-201' },
+    { courseIdx: 1, instructor_ar: 'MennaTullah Serajeldin Roushdy Ali', instructor_en: 'MennaTullah Serajeldin Roushdy Ali', slots: [{ day: 'sunday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }, { day: 'tuesday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }], room: 'LAB-1' },
+    { courseIdx: 2, instructor_ar: 'Seyed Ghasem Saatchi', instructor_en: 'Seyed Ghasem Saatchi', slots: [{ day: 'monday', start_time: '08:00', end_time: '10:00', room: 'LAB-2' }, { day: 'wednesday', start_time: '08:00', end_time: '10:00', room: 'LAB-2' }], room: 'LAB-2' },
+    { courseIdx: 3, instructor_ar: 'Tareq Ahmad Ali Al-Zayyat', instructor_en: 'Tareq Ahmad Ali Al-Zayyat', slots: [{ day: 'monday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }, { day: 'wednesday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }], room: 'LAB-1' },
   ];
 
   const sectionIds: string[] = [];
@@ -117,8 +120,8 @@ async function seed() {
       'Noura Al-Sabah',
       'noura@cck.edu.kw',
       '+96599001234',
-      'علوم الحاسب',
-      'Computer Science',
+      'دبلوم برمجة الحاسوب',
+      'Diploma of Computer Programming',
       2024,
       'enrolled',
       3.45,
@@ -127,6 +130,32 @@ async function seed() {
   );
   const studentId = studentResult.rows[0].id;
   console.log('✅ Student created: Noura Al-Sabah');
+
+  // Advising meeting scheduled by an advisor (shown on the student's calendar).
+  // Guarded so seeding still succeeds against a pre-existing schema.
+  try {
+    await query(
+      `INSERT INTO advising_meetings (student_id, type, title_ar, title_en, advisor_ar, advisor_en, scheduled_at, location_ar, location_en, notes_ar, notes_en)
+       SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+       WHERE NOT EXISTS (SELECT 1 FROM advising_meetings WHERE student_id = $1 AND type = $2)`,
+      [
+        studentId,
+        'gpa_warning',
+        'موعد إنذار المعدل',
+        'GPA Warning Appointment',
+        'د. أحمد الغامدي',
+        'Dr. Ahmed Al-Ghamdi',
+        '2026-04-22T11:00:00Z',
+        'مبنى التسجيل، مكتب 204',
+        'Registration Building, Office 204',
+        'يرجى إحضار الجدول الدراسي الحالي.',
+        'Please bring your current course schedule.',
+      ],
+    );
+    console.log('✅ Advising meeting created');
+  } catch {
+    console.log('ℹ️  Skipped advising meeting seed (table not present)');
+  }
 
   // Enrollments
   const enrollmentGrades: (string | null)[] = ['A-', 'B+', null, null]; // first two graded, last two in progress
@@ -252,7 +281,7 @@ async function seed() {
 
   console.log('\n🎉 Seed complete! Database ready for development.\n');
   console.log('Student login: noura@cck.edu.kw');
-  console.log('University: GUST (gust)');
+  console.log('University: CCK (cck)');
 
   await pool.end();
 }

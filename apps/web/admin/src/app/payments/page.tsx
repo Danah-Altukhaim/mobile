@@ -7,6 +7,7 @@ import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
 import { useI18n } from '@/lib/i18n';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/PageHeader';
 
 interface PaymentData {
   total_billed: number;
@@ -63,7 +64,7 @@ export default function PaymentsPage() {
 
   return (
     <div dir={dir}>
-      <h1 className="text-2xl font-bold mb-6">{t('payments.title')}</h1>
+      <PageHeader title={t('payments.title')} />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card title={t('payments.totalBilled')} value={fmt(data.total_billed)} />
@@ -73,11 +74,11 @@ export default function PaymentsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('payments.byCohort')}</h2>
           <table className="w-full text-sm">
             <thead>
-              <tr className={`${textAlign} text-gray-500 border-b`}>
+              <tr className={`${textAlign} text-muted border-b`}>
                 <th className="pb-2">{t('payments.cohort')}</th>
                 <th className="pb-2">{t('payments.billed')}</th>
                 <th className="pb-2">{t('payments.collected')}</th>
@@ -86,12 +87,12 @@ export default function PaymentsPage() {
             </thead>
             <tbody>
               {data.by_cohort.map((c) => (
-                <tr key={c.cohort} className="border-b border-gray-50">
+                <tr key={c.cohort} className="border-b border-line">
                   <td className="py-3">{t('engagement.classOf', { value: c.cohort })}</td>
                   <td className="py-3">{fmt(c.billed)}</td>
                   <td className="py-3">{fmt(c.collected)}</td>
                   <td className="py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${c.rate >= 90 ? 'bg-oasis-100 text-oasis-700' : c.rate >= 80 ? 'bg-gold-100 text-gold-700' : 'bg-danger-100 text-danger-700'}`}>
+                    <span className={`px-2 py-0.5 rounded-sm text-xs font-medium ${c.rate >= 90 ? 'cck-chip-positive' : c.rate >= 80 ? 'cck-chip-neutral' : 'cck-chip-negative'}`}>
                       {c.rate}%
                     </span>
                   </td>
@@ -101,42 +102,42 @@ export default function PaymentsPage() {
           </table>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('payments.methods')}</h2>
           <div className="space-y-4">
             {data.by_method.map((m) => (
               <div key={m.method}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{t(m.method)}</span>
-                  <span className="text-gray-500">{m.count.toLocaleString()} {t('payments.transactions')} &middot; {(m.amount / 1000000).toFixed(1)}M KWD</span>
+                  <span className="text-body">{t(m.method)}</span>
+                  <span className="text-muted">{m.count.toLocaleString()} {t('payments.transactions')} &middot; {(m.amount / 1000000).toFixed(1)}M KWD</span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
+                <div className="w-full bg-canvas rounded-full h-3">
                   <div className="bg-pair-500 h-3 rounded-full" style={{ width: `${m.percentage}%` }} />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{m.percentage}%</p>
+                <p className="text-xs text-muted mt-1">{m.percentage}%</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="cck-card p-6">
         <h2 className="text-lg font-semibold mb-4">{t('payments.overdueByCollege')}</h2>
         <table className="w-full text-sm">
           <thead>
-            <tr className={`${textAlign} text-gray-500 border-b`}>
+            <tr className={`${textAlign} text-muted border-b`}>
               <th className="pb-2">{t('payments.college')}</th>
-              <th className="pb-2 cursor-pointer select-none hover:text-gray-700" onClick={() => toggleOverdueSort('students')}>
+              <th className="pb-2 cursor-pointer select-none hover:text-body" onClick={() => toggleOverdueSort('students')}>
                 {t('payments.students')}{sortArrow('students')}
               </th>
-              <th className="pb-2 cursor-pointer select-none hover:text-gray-700" onClick={() => toggleOverdueSort('amount')}>
+              <th className="pb-2 cursor-pointer select-none hover:text-body" onClick={() => toggleOverdueSort('amount')}>
                 {t('payments.outstandingAmount')}{sortArrow('amount')}
               </th>
             </tr>
           </thead>
           <tbody>
             {sortedOverdue.map((c) => (
-              <tr key={c.college} className="border-b border-gray-50">
+              <tr key={c.college} className="border-b border-line">
                 <td className="py-3">{t(c.college)}</td>
                 <td className="py-3">{c.students}</td>
                 <td className="py-3 font-medium text-danger-600">{(c.amount / 1000).toFixed(0)}K KWD</td>

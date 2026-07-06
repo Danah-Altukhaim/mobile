@@ -1,5 +1,14 @@
-import React from 'react';
-import { View, Modal, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Animated,
+  ViewStyle,
+  Easing,
+  Dimensions,
+} from 'react-native';
 import { useColors } from '../../theme/useColors';
 import { spacing, borderRadius } from '../../theme/spacing';
 
@@ -8,56 +17,123 @@ interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   style?: ViewStyle;
+  /** Announced to screen readers when the sheet opens. */
+  accessibilityLabel?: string;
 }
 
-export function BottomSheet({ visible, onClose, children, style }: BottomSheetProps) {
+const { height: SCREEN_H } = Dimensions.get('window');
+
+export function BottomSheet({
+  visible,
+  onClose,
+  children,
+  style,
+  accessibilityLabel,
+}: BottomSheetProps) {
   const colors = useColors();
+  const translate = useRef(new Animated.Value(SCREEN_H)).current;
+  const overlay = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(overlay, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(translate, {
+          toValue: 0,
+          useNativeDriver: true,
+          speed: 18,
+          bounciness: 4,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(overlay, {
+          toValue: 0,
+          duration: 180,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translate, {
+          toValue: SCREEN_H,
+          duration: 220,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible, overlay, translate]);
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <View style={styles.spacer} />
-        <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View style={[styles.sheet, { backgroundColor: colors.surface }, style]}>
-            <View style={[styles.handle, { backgroundColor: colors.border }]} />
-            {children}
-          </View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+      <View style={styles.root}>
+        <Animated.View
+          style={[styles.overlay, { opacity: overlay }]}
+          pointerEvents={visible ? 'auto' : 'none'}
+        >
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          />
+        </Animated.View>
+        <Animated.View
+          accessibilityViewIsModal
+          accessibilityLabel={accessibilityLabel}
+          style={[
+            styles.sheet,
+            { backgroundColor: colors.surface, transform: [{ translateY: translate }] },
+            style,
+          ]}
+        >
+          <View
+            style={[styles.handle, { backgroundColor: colors.borderStrong }]}
+            importantForAccessibility="no"
+          />
+          {children}
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  root: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
-  spacer: {
-    flex: 1,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 14, 11, 0.45)',
   },
   sheet: {
     borderTopStartRadius: borderRadius.xl,
     borderTopEndRadius: borderRadius.xl,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing['2xl'],
-    paddingTop: spacing.md,
-    maxHeight: '80%',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    paddingTop: 10,
+    maxHeight: '88%',
+    shadowColor: '#0E2A1B',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 30,
+    elevation: 20,
   },
   handle: {
-    width: 40,
+    width: 36,
     height: 4,
-    borderRadius: borderRadius.full,
+    borderRadius: 2,
     alignSelf: 'center',
     marginBottom: spacing.base,
   },

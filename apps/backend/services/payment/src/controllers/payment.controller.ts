@@ -235,14 +235,4 @@ export class PaymentController {
   getInstallments = async (_req: AuthRequest, res: Response): Promise<void> => {
     res.json({ success: true, data: mockData.mockInstallmentPlan, meta: { source: 'mock' } });
   };
-
-  /** GET /api/v1/payments/financial-aid */
-  getFinancialAid = async (_req: AuthRequest, res: Response): Promise<void> => {
-    res.json({ success: true, data: mockData.mockFinancialAid, meta: { source: 'mock' } });
-  };
-
-  /** GET /api/v1/payments/refunds */
-  getRefunds = async (_req: AuthRequest, res: Response): Promise<void> => {
-    res.json({ success: true, data: mockData.mockRefunds, meta: { source: 'mock' } });
-  };
 }

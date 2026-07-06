@@ -7,6 +7,19 @@ import { SkeletonPage } from '@/components/Skeleton';
 import ErrorState from '@/components/ErrorState';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import StatusBadge, { type LifecycleStatus } from '@/components/StatusBadge';
+
+// Older intervention records may still carry legacy outcome labels.
+const normalizeOutcome = (raw: string): LifecycleStatus | null => {
+  if (!raw) return null;
+  if (raw === 'pending' || raw === 'completed' || raw === 'rejected' || raw === 'not_started') {
+    return raw;
+  }
+  if (raw === 'Resolved') return 'completed';
+  if (raw === 'Ongoing') return 'pending';
+  if (raw === 'Escalated' || raw === 'Withdrew') return 'rejected';
+  return null;
+};
 
 interface StudentProfile {
   id: string;
@@ -43,7 +56,7 @@ export default function StudentProfilePage() {
   if (isError) return <ErrorState title={t('common.error')} description={t('common.errorDescription')} onRetry={() => refetch()} retryLabel={t('common.retry')} />;
   if (!student) return <SkeletonPage />;
 
-  const riskColor = student.risk_level === 'high' ? 'bg-danger-100 text-danger-700' : 'bg-gold-100 text-gold-700';
+  const riskColor = student.risk_level === 'high' ? 'cck-chip-negative' : 'cck-chip-neutral';
   const thAlign = isAr ? 'text-right' : 'text-left';
 
   return (
@@ -54,11 +67,11 @@ export default function StudentProfilePage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">{student.name_en}</h1>
-          <p className="text-gray-500">{student.name_ar} &middot; #{student.student_id} &middot; {student.email}</p>
+          <h1 className="cck-title">{student.name_en}</h1>
+          <p className="text-muted">{student.name_ar} &middot; #{student.student_id} &middot; {student.email}</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`px-3 py-1 rounded text-sm font-medium ${riskColor}`}>
+          <span className={`px-3 py-1 rounded-sm text-sm font-medium ${riskColor}`}>
             {t('retention.riskScore', { value: String(Math.round(student.risk_score * 100)) })}
           </span>
           <span className="text-lg font-bold">{t('retention.gpa', { value: String(student.gpa) })}</span>
@@ -66,28 +79,28 @@ export default function StudentProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">{t('retention.college')}</p>
+        <div className="cck-card p-4">
+          <p className="text-sm text-muted">{t('retention.college')}</p>
           <p className="font-medium">{student.college_en}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">{t('student.major')}</p>
+        <div className="cck-card p-4">
+          <p className="text-sm text-muted">{t('student.major')}</p>
           <p className="font-medium">{student.major_en}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">{t('student.assignedAdvisor')}</p>
+        <div className="cck-card p-4">
+          <p className="text-sm text-muted">{t('student.assignedAdvisor')}</p>
           <p className="font-medium">{student.assigned_advisor.name_en}</p>
-          <p className="text-xs text-gray-400">{student.assigned_advisor.email}</p>
+          <p className="text-xs text-muted">{student.assigned_advisor.email}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Academic History */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('student.academicHistory')}</h2>
           <table className="w-full text-sm">
             <thead>
-              <tr className={`${thAlign} text-gray-500 border-b`}>
+              <tr className={`${thAlign} text-muted border-b`}>
                 <th className="pb-2">{t('student.semester')}</th>
                 <th className="pb-2">{t('retention.gpa', { value: '' }).trim()}</th>
                 <th className="pb-2">{t('student.credits')}</th>
@@ -96,12 +109,12 @@ export default function StudentProfilePage() {
             </thead>
             <tbody>
               {student.academic_history.map((s) => (
-                <tr key={s.semester} className="border-b border-gray-50">
+                <tr key={s.semester} className="border-b border-line">
                   <td className="py-2">{s.semester}</td>
                   <td className="py-2">{s.gpa}</td>
                   <td className="py-2">{s.credits}</td>
                   <td className="py-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${s.status === 'Good Standing' ? 'bg-oasis-100 text-oasis-700' : s.status === 'Probation' ? 'bg-danger-100 text-danger-700' : 'bg-gold-100 text-gold-700'}`}>
+                    <span className={`px-2 py-0.5 rounded-sm text-xs ${s.status === 'Good Standing' ? 'cck-chip-positive' : s.status === 'Probation' ? 'cck-chip-negative' : 'cck-chip-neutral'}`}>
                       {s.status}
                     </span>
                   </td>
@@ -112,20 +125,20 @@ export default function StudentProfilePage() {
         </div>
 
         {/* Attendance */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('student.attendance')}</h2>
           <div className="space-y-3">
             {student.attendance.map((a) => (
               <div key={a.course}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{a.course}</span>
-                  <span className={`text-xs font-medium ${a.rate >= 80 ? 'text-oasis-600' : a.rate >= 60 ? 'text-gold-600' : 'text-danger-600'}`}>
+                  <span className="text-body">{a.course}</span>
+                  <span className={`text-xs font-medium ${a.rate < 60 ? 'text-danger-600' : 'text-body'}`}>
                     {a.attended}/{a.total} ({a.rate}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-canvas rounded-full h-2">
                   <div
-                    className={`h-2 rounded-full ${a.rate >= 80 ? 'bg-oasis-500' : a.rate >= 60 ? 'bg-gold-500' : 'bg-danger-500'}`}
+                    className={`h-2 rounded-full ${a.rate >= 80 ? 'bg-pair-600' : a.rate >= 60 ? 'bg-line-strong' : 'bg-danger-500'}`}
                     style={{ width: `${a.rate}%` }}
                   />
                 </div>
@@ -137,11 +150,11 @@ export default function StudentProfilePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Payment Status */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('student.paymentStatus')}</h2>
           <table className="w-full text-sm">
             <thead>
-              <tr className={`${thAlign} text-gray-500 border-b`}>
+              <tr className={`${thAlign} text-muted border-b`}>
                 <th className="pb-2">{t('student.item')}</th>
                 <th className="pb-2">{t('student.amount')}</th>
                 <th className="pb-2">{t('student.due')}</th>
@@ -150,12 +163,12 @@ export default function StudentProfilePage() {
             </thead>
             <tbody>
               {student.payment_status.map((p, i) => (
-                <tr key={i} className="border-b border-gray-50">
+                <tr key={i} className="border-b border-line">
                   <td className="py-2">{p.item}</td>
                   <td className="py-2">{p.amount.toLocaleString()} KWD</td>
-                  <td className="py-2 text-xs text-gray-500">{p.due_date}</td>
+                  <td className="py-2 text-xs text-muted">{p.due_date}</td>
                   <td className="py-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${p.status === 'Paid' ? 'bg-oasis-100 text-oasis-700' : p.status === 'Overdue' ? 'bg-danger-100 text-danger-700' : 'bg-gold-100 text-gold-700'}`}>
+                    <span className={`px-2 py-0.5 rounded-sm text-xs ${p.status === 'Paid' ? 'cck-chip-positive' : p.status === 'Overdue' ? 'cck-chip-negative' : 'cck-chip-neutral'}`}>
                       {p.status}
                     </span>
                   </td>
@@ -166,13 +179,13 @@ export default function StudentProfilePage() {
         </div>
 
         {/* Engagement Timeline */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="cck-card p-6">
           <h2 className="text-lg font-semibold mb-4">{t('student.engagementTimeline')}</h2>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {student.engagement_timeline.map((e, i) => (
               <div key={i} className="flex items-start gap-3 text-sm">
-                <span className="text-xs text-gray-400 w-20 shrink-0">{e.date}</span>
-                <span className="text-gray-600">{e.action}</span>
+                <span className="text-xs text-muted w-20 shrink-0">{e.date}</span>
+                <span className="text-body">{e.action}</span>
               </div>
             ))}
           </div>
@@ -180,14 +193,14 @@ export default function StudentProfilePage() {
       </div>
 
       {/* Previous Interventions */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="cck-card p-6">
         <h2 className="text-lg font-semibold mb-4">{t('student.previousInterventions')}</h2>
         {student.interventions.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('retention.noInterventions')}</p>
+          <p className="text-sm text-muted">{t('retention.noInterventions')}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className={`${thAlign} text-gray-500 border-b`}>
+              <tr className={`${thAlign} text-muted border-b`}>
                 <th className="pb-2">{t('student.due')}</th>
                 <th className="pb-2">{t('student.type')}</th>
                 <th className="pb-2">{t('retention.advisor')}</th>
@@ -197,16 +210,19 @@ export default function StudentProfilePage() {
             </thead>
             <tbody>
               {student.interventions.map((inv, i) => (
-                <tr key={i} className="border-b border-gray-50">
-                  <td className="py-2 text-xs text-gray-500">{inv.date}</td>
+                <tr key={i} className="border-b border-line">
+                  <td className="py-2 text-xs text-muted">{inv.date}</td>
                   <td className="py-2">{inv.type}</td>
                   <td className="py-2">{inv.advisor}</td>
                   <td className="py-2">
-                    <span className={`px-2 py-0.5 rounded text-xs ${inv.outcome === 'Resolved' ? 'bg-oasis-100 text-oasis-700' : inv.outcome === 'Ongoing' ? 'bg-blue-100 text-blue-700' : inv.outcome === 'Escalated' ? 'bg-danger-100 text-danger-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {inv.outcome}
-                    </span>
+                    {(() => {
+                      const norm = normalizeOutcome(inv.outcome);
+                      return norm
+                        ? <StatusBadge status={norm} />
+                        : <StatusBadge status="not_started" />;
+                    })()}
                   </td>
-                  <td className="py-2 text-xs text-gray-500">{inv.notes}</td>
+                  <td className="py-2 text-xs text-muted">{inv.notes}</td>
                 </tr>
               ))}
             </tbody>

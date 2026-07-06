@@ -7,12 +7,14 @@ import { useI18n } from '@/lib/i18n';
 import { SkeletonTable } from '@/components/Skeleton';
 import EmptyState from '@/components/EmptyState';
 import ErrorState from '@/components/ErrorState';
+import RejectReasonDialog from '@/components/RejectReasonDialog';
+import StatusBadge, { type LifecycleStatus } from '@/components/StatusBadge';
+import PageHeader from '@/components/PageHeader';
 
-const STATUS_STYLE: Record<SportApplication['status'], string> = {
-  pending: 'bg-gold-50 text-gold-700',
-  approved: 'bg-oasis-50 text-oasis-700',
-  rejected: 'bg-danger-50 text-danger-700',
-};
+const toLifecycle = (s: SportApplication['status']): LifecycleStatus =>
+  s === 'pending' ? 'not_started'
+  : s === 'approved' ? 'completed'
+  : 'rejected';
 
 const SPORT_KEY = ['sport', 'applications'] as const;
 
@@ -24,17 +26,24 @@ export default function SportPage() {
     queryFn: () => api.getSportApplications() as Promise<SportApplication[]>,
   });
   const [busy, setBusy] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<SportApplication | null>(null);
 
-  const decide = async (id: string, decision: 'approved' | 'rejected') => {
+  const decide = async (id: string, decision: 'approved' | 'rejected', reason?: string) => {
     setBusy(id + decision);
     try {
-      await api.decideSport(id, decision);
+      await api.decideSport(id, decision, reason);
       qc.setQueryData<SportApplication[]>(SPORT_KEY, (prev) =>
         prev?.map((s) => s.id === id ? { ...s, status: decision } : s) ?? prev,
       );
     } finally {
       setBusy(null);
     }
+  };
+
+  const confirmReject = async (reason: string) => {
+    if (!rejectTarget) return;
+    await decide(rejectTarget.id, 'rejected', reason);
+    setRejectTarget(null);
   };
 
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(locale === 'ar' ? 'ar-KW' : 'en-GB', {
@@ -45,18 +54,17 @@ export default function SportPage() {
 
   return (
     <div dir={dir}>
-      <h1 className="text-2xl font-bold mb-1">{t('sport.title')}</h1>
-      <p className="text-sm text-[#737477] mb-6">{t('sport.subtitle')}</p>
+      <PageHeader title={t('sport.title')} subtitle={t('sport.subtitle')} />
 
       {isLoading || !apps ? (
         <SkeletonTable rows={3} cols={5} />
       ) : apps.length === 0 ? (
         <EmptyState title={t('common.noData')} />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="cck-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[#737477] border-b bg-gray-50">
+              <tr className="text-muted border-b bg-canvas">
                 <th className="px-4 py-3 text-start font-medium">{t('requests.student')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('sport.activity')}</th>
                 <th className="px-4 py-3 text-start font-medium">{t('sport.proofDoc')}</th>
@@ -67,34 +75,28 @@ export default function SportPage() {
             </thead>
             <tbody>
               {apps.map((s) => (
-                <tr key={s.id} className="border-b border-gray-50 last:border-0">
+                <tr key={s.id} className="border-b border-line last:border-0">
                   <td className="px-4 py-3">
                     <p className="font-medium">{locale === 'ar' ? s.student_name_ar : s.student_name_en}</p>
-                    <p className="text-xs text-[#737477]">{s.student_id} · {fmtDate(s.submitted_at)}</p>
+                    <p className="text-xs text-muted">{s.student_id} · {fmtDate(s.submitted_at)}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-[#222]">{s.activity}</p>
-                    <span className={`mt-1 inline-block px-1.5 py-0.5 rounded text-[11px] font-medium ${
-                      s.player_type === 'local_club' ? 'bg-pair-50 text-pair-700' : 'bg-gold-50 text-gold-700'
-                    }`}>
+                    <p className="text-ink">{s.activity}</p>
+                    <span className="mt-1 inline-block px-1.5 py-0.5 rounded-sm text-[11px] font-medium cck-chip-neutral">
                       {t(`sport.playerType.${s.player_type}`)}
                     </span>
                     {s.player_type === 'amateur' && s.coach_en && (
-                      <p className="text-xs text-[#737477] mt-0.5">
+                      <p className="text-xs text-muted mt-0.5">
                         {t('sport.coach')}: {locale === 'ar' ? s.coach_ar : s.coach_en}
                       </p>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded bg-gray-100 text-[#222] text-xs font-mono">{s.proof_doc}</span>
+                    <span className="px-2 py-0.5 rounded-sm bg-canvas text-ink text-xs font-mono">{s.proof_doc}</span>
                   </td>
                   <td className="px-4 py-3 font-semibold">{s.discount_pct}%</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLE[s.status]}`}>
-                      {s.status === 'pending' ? t('status.pending')
-                        : s.status === 'approved' ? t('status.approved')
-                        : t('common.error')}
-                    </span>
+                    <StatusBadge status={toLifecycle(s.status)} />
                   </td>
                   <td className="px-4 py-3 text-end">
                     {s.status === 'pending' && (
@@ -102,14 +104,14 @@ export default function SportPage() {
                         <button
                           onClick={() => decide(s.id, 'approved')}
                           disabled={busy === s.id + 'approved'}
-                          className="px-2.5 py-1 bg-pair-600 text-white rounded text-xs font-medium hover:bg-pair-700 disabled:opacity-50"
+                          className="btn btn-primary btn-sm text-xs"
                         >
                           {t('sport.approve')}
                         </button>
                         <button
-                          onClick={() => decide(s.id, 'rejected')}
+                          onClick={() => setRejectTarget(s)}
                           disabled={busy === s.id + 'rejected'}
-                          className="px-2.5 py-1 border border-danger-200 text-danger-700 rounded text-xs hover:bg-danger-50 disabled:opacity-50"
+                          className="btn btn-danger btn-sm"
                         >
                           {t('sport.reject')}
                         </button>
@@ -122,6 +124,17 @@ export default function SportPage() {
           </table>
         </div>
       )}
+
+      <RejectReasonDialog
+        open={rejectTarget !== null}
+        title={t('sport.reject')}
+        subject={rejectTarget
+          ? `${locale === 'ar' ? rejectTarget.student_name_ar : rejectTarget.student_name_en} · ${rejectTarget.activity}`
+          : undefined}
+        busy={busy === (rejectTarget?.id ?? '') + 'rejected'}
+        onConfirm={confirmReject}
+        onCancel={() => setRejectTarget(null)}
+      />
     </div>
   );
 }

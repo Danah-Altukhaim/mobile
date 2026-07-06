@@ -10,6 +10,7 @@ import EmptyState from '@/components/EmptyState';
 import Pagination from '@/components/Pagination';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import RoleMenu from '@/components/RoleMenu';
+import PageHeader from '@/components/PageHeader';
 
 const USERS_KEY = ['users'] as const;
 
@@ -179,10 +180,10 @@ export default function UsersPage() {
 
   const roleBadge = (role: string) => {
     const colors: Record<string, string> = {
-      super_admin: 'bg-purple-100 text-purple-700',
-      university_admin: 'bg-blue-100 text-blue-700',
-      advisor: 'bg-oasis-100 text-oasis-700',
-      staff: 'bg-gray-100 text-gray-700',
+      super_admin: 'bg-pine text-white',
+      university_admin: 'bg-pair-100 text-pair-700',
+      advisor: 'cck-chip-neutral',
+      staff: 'bg-canvas text-body',
     };
     return colors[role] || colors.staff;
   };
@@ -204,7 +205,7 @@ export default function UsersPage() {
   if (isLoading) {
     return (
       <div dir={isRTL ? 'rtl' : 'ltr'}>
-        <div className="h-7 bg-gray-200 rounded w-48 mb-6 animate-pulse" />
+        <div className="h-7 bg-line-strong rounded-sm w-48 mb-6 animate-pulse" />
         <SkeletonTable rows={5} cols={5} />
       </div>
     );
@@ -212,62 +213,64 @@ export default function UsersPage() {
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('users.title')}</h1>
-        <div className="flex gap-3">
-          <input
-            type="file"
-            accept=".csv"
-            ref={fileRef}
-            onChange={handleFileImport}
-            className="hidden"
-          />
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            {t('users.importStudents')}
-          </button>
-          <button
-            onClick={() => setShowExportPanel(!showExportPanel)}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            {t('users.exportStudents')}
-          </button>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 text-sm bg-pair-600 text-white rounded-lg hover:bg-pair-700"
-          >
-            {t('users.addAdmin')}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title={t('users.title')}
+        actions={
+          <>
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileRef}
+              onChange={handleFileImport}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="btn btn-outline"
+            >
+              {t('users.importStudents')}
+            </button>
+            <button
+              onClick={() => setShowExportPanel(!showExportPanel)}
+              className="btn btn-outline"
+            >
+              {t('users.exportStudents')}
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="btn btn-primary"
+            >
+              {t('users.addAdmin')}
+            </button>
+          </>
+        }
+      />
 
       {successMsg && (
-        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-3 mb-4 flex items-center justify-between">
-          <p className="text-sm text-oasis-700">{successMsg}</p>
-          <button onClick={() => setSuccessMsg(null)} aria-label={t('common.cancel')} className="text-oasis-500 hover:text-oasis-700 text-sm ms-4">&times;</button>
+        <div role="status" aria-live="polite" className="bg-pair-50 border border-pair-200 rounded-sm p-3 mb-4 flex items-center justify-between">
+          <p className="text-sm text-pair-700">{successMsg}</p>
+          <button onClick={() => setSuccessMsg(null)} aria-label={t('common.cancel')} className="text-pair-600 hover:text-pair-700 text-sm ms-4">&times;</button>
         </div>
       )}
 
       {importBanner && (
-        <div role="status" aria-live="polite" className="bg-oasis-50 border border-oasis-200 rounded-lg p-3 mb-4 flex items-center justify-between">
-          <p className="text-sm text-oasis-700">{importBanner}</p>
-          <button onClick={() => setImportBanner(null)} aria-label={t('common.cancel')} className="text-oasis-500 hover:text-oasis-700 text-sm ms-4">&times;</button>
+        <div role="status" aria-live="polite" className="bg-pair-50 border border-pair-200 rounded-sm p-3 mb-4 flex items-center justify-between">
+          <p className="text-sm text-pair-700">{importBanner}</p>
+          <button onClick={() => setImportBanner(null)} aria-label={t('common.cancel')} className="text-pair-600 hover:text-pair-700 text-sm ms-4">&times;</button>
         </div>
       )}
 
       {/* Export Filters Panel */}
       {showExportPanel && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 space-y-4">
+        <div className="cck-card p-6 mb-6 space-y-4">
           <h3 className="text-sm font-semibold">{t('users.exportFilters')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('users.exportCollege')}</label>
+              <label className="block text-xs text-muted mb-1">{t('users.exportCollege')}</label>
               <select
                 value={exportFilters.college}
                 onChange={(e) => setExportFilters({ ...exportFilters, college: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="cck-input"
               >
                 <option value="">{t('users.allColleges')}</option>
                 <option value="computer_science">Computer Science</option>
@@ -278,11 +281,11 @@ export default function UsersPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('users.exportYear')}</label>
+              <label className="block text-xs text-muted mb-1">{t('users.exportYear')}</label>
               <select
                 value={exportFilters.year}
                 onChange={(e) => setExportFilters({ ...exportFilters, year: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="cck-input"
               >
                 <option value="">{t('users.allYears')}</option>
                 <option value="1">1st Year</option>
@@ -293,11 +296,11 @@ export default function UsersPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('users.exportStatus')}</label>
+              <label className="block text-xs text-muted mb-1">{t('users.exportStatus')}</label>
               <select
                 value={exportFilters.status}
                 onChange={(e) => setExportFilters({ ...exportFilters, status: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="cck-input"
               >
                 <option value="">{t('users.allStatuses')}</option>
                 <option value="active">Active</option>
@@ -311,13 +314,13 @@ export default function UsersPage() {
             <button
               onClick={handleExportFiltered}
               disabled={exporting}
-              className="px-4 py-2 text-sm bg-pair-600 text-white rounded-lg hover:bg-pair-700 disabled:opacity-50"
+              className="btn btn-primary"
             >
               {exporting ? t('users.exporting') : t('users.exportWithFilters')}
             </button>
             <button
               onClick={() => setShowExportPanel(false)}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="btn btn-outline"
             >
               {t('common.cancel')}
             </button>
@@ -327,13 +330,13 @@ export default function UsersPage() {
 
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-pair-50 border border-pair-200 rounded-lg p-3 mb-4 flex items-center gap-4 flex-wrap">
+        <div className="bg-pair-50 border border-pair-200 rounded-sm p-3 mb-4 flex items-center gap-4 flex-wrap">
           <span className="text-sm font-medium text-pair-700">{t('users.selected', { count: selectedIds.size })}</span>
           <div className="flex items-center gap-2">
             <select
               value={bulkRole}
               onChange={(e) => setBulkRole(e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+              className="border border-line-strong rounded-sm px-2 py-1.5 text-sm"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>{getRoleName(r)}</option>
@@ -341,14 +344,14 @@ export default function UsersPage() {
             </select>
             <button
               onClick={() => setBulkConfirm({ type: 'role', message: t('users.bulkConfirmRole', { count: selectedIds.size, role: getRoleName(bulkRole) }) })}
-              className="px-3 py-1.5 text-sm bg-pair-600 text-white rounded-lg hover:bg-pair-700"
+              className="btn btn-primary btn-sm"
             >
               {t('users.bulkChangeRole')}
             </button>
           </div>
           <button
             onClick={() => setBulkConfirm({ type: 'suspend', message: t('users.bulkConfirmSuspend', { count: selectedIds.size }) })}
-            className="px-3 py-1.5 text-sm bg-danger-600 text-white rounded-lg hover:bg-danger-700"
+            className="btn btn-danger btn-sm"
           >
             {t('users.bulkSuspend')}
           </button>
@@ -356,39 +359,39 @@ export default function UsersPage() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-xl border border-gray-200 p-6 mb-6 space-y-4">
+        <form onSubmit={handleCreate} className="cck-card p-6 mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label htmlFor="new-user-email" className="block text-xs font-medium text-gray-700 mb-1">{t('users.email')}</label>
+              <label htmlFor="new-user-email" className="block text-xs font-medium text-body mb-1">{t('users.email')}</label>
               <input
                 id="new-user-email"
                 type="email"
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="cck-input"
                 required
               />
             </div>
             <div>
-              <label htmlFor="new-user-name-en" className="block text-xs font-medium text-gray-700 mb-1">{t('users.nameEn')}</label>
+              <label htmlFor="new-user-name-en" className="block text-xs font-medium text-body mb-1">{t('users.nameEn')}</label>
               <input
                 id="new-user-name-en"
                 type="text"
                 value={newUser.name_en}
                 onChange={(e) => setNewUser({ ...newUser, name_en: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="cck-input"
                 dir="ltr"
                 required
               />
             </div>
             <div>
-              <label htmlFor="new-user-name-ar" className="block text-xs font-medium text-gray-700 mb-1">{t('users.nameAr')}</label>
+              <label htmlFor="new-user-name-ar" className="block text-xs font-medium text-body mb-1">{t('users.nameAr')}</label>
               <input
                 id="new-user-name-ar"
                 type="text"
                 value={newUser.name_ar}
                 onChange={(e) => setNewUser({ ...newUser, name_ar: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="cck-input"
                 dir="rtl"
                 required
               />
@@ -396,12 +399,12 @@ export default function UsersPage() {
           </div>
           <div className="flex items-end gap-4">
             <div>
-              <label htmlFor="new-user-role" className="block text-xs font-medium text-gray-700 mb-1">{t('users.role')}</label>
+              <label htmlFor="new-user-role" className="block text-xs font-medium text-body mb-1">{t('users.role')}</label>
               <select
                 id="new-user-role"
                 value={newUser.role}
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="border border-line-strong rounded-sm px-3 py-2 text-sm"
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>{getRoleName(r)}</option>
@@ -411,7 +414,7 @@ export default function UsersPage() {
             <button
               type="submit"
               disabled={creating}
-              className="px-4 py-2 bg-pair-600 text-white text-sm rounded-lg hover:bg-pair-700 disabled:opacity-50"
+              className="btn btn-primary"
             >
               {creating ? t('users.creating') : t('users.createUser')}
             </button>
@@ -423,16 +426,16 @@ export default function UsersPage() {
         <EmptyState title={t('users.noUsers')} />
       ) : (
         <>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="cck-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-gray-500 border-b bg-gray-50">
+                <tr className="text-muted border-b bg-canvas">
                   <th className="px-3 py-3 w-10">
                     <input
                       type="checkbox"
                       checked={selectedIds.size === paginatedUsers.length && paginatedUsers.length > 0}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 text-pair-600 rounded"
+                      className="w-4 h-4 text-pair-600 rounded-sm"
                     />
                   </th>
                   <th className="px-6 py-3 text-start">{t('users.name')}</th>
@@ -444,22 +447,22 @@ export default function UsersPage() {
               </thead>
               <tbody>
                 {paginatedUsers.map((u) => (
-                  <tr key={u.id} className={`border-b border-gray-50 ${selectedIds.has(u.id) ? 'bg-pair-50/50' : ''}`}>
+                  <tr key={u.id} className={`border-b border-line ${selectedIds.has(u.id) ? 'bg-pair-50/50' : ''}`}>
                     <td className="px-3 py-4">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(u.id)}
                         onChange={() => toggleSelect(u.id)}
-                        className="w-4 h-4 text-pair-600 rounded"
+                        className="w-4 h-4 text-pair-600 rounded-sm"
                       />
                     </td>
                     <td className="px-6 py-4">
                       <div>
                         <span className="font-medium">{primaryName(u)}</span>
-                        <span className="block text-xs text-gray-400">{secondaryName(u)}</span>
+                        <span className="block text-xs text-muted">{secondaryName(u)}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{u.email}</td>
+                    <td className="px-6 py-4 text-body">{u.email}</td>
                     <td className="px-6 py-4">
                       <RoleMenu
                         value={u.role}
@@ -470,11 +473,11 @@ export default function UsersPage() {
                       />
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-xs ${u.status === 'active' ? 'bg-oasis-100 text-oasis-700' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`px-2 py-0.5 rounded-sm text-xs ${u.status === 'active' ? 'cck-chip-positive' : 'cck-chip-neutral'}`}>
                         {u.status === 'active' ? t('status.active') : t('status.inactive')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-500 text-xs">
+                    <td className="px-6 py-4 text-muted text-xs">
                       {u.last_login
                         ? new Date(u.last_login).toLocaleString(locale === 'ar' ? 'ar-KW' : 'en-GB')
                         : '-'}

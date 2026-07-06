@@ -50,7 +50,7 @@ export default function RoleMenu({ value, options, badgeClass, onChange, ariaLab
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${badgeClass} hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pair-500`}
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-semibold ${badgeClass} hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pair-500`}
       >
         <span>{current?.label ?? value}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden className="opacity-60">
@@ -60,7 +60,7 @@ export default function RoleMenu({ value, options, badgeClass, onChange, ariaLab
       {open && (
         <ul
           role="listbox"
-          className="absolute z-30 mt-1 min-w-[10rem] bg-white border border-gray-200 rounded-lg shadow-lg py-1 start-0"
+          className="absolute z-30 mt-1 min-w-[10rem] bg-panel border border-line-strong rounded-sm shadow-lg py-1 start-0"
         >
           {options.map((opt) => {
             const selected = opt.value === value;
@@ -69,7 +69,7 @@ export default function RoleMenu({ value, options, badgeClass, onChange, ariaLab
                 <button
                   type="button"
                   onClick={() => { setOpen(false); if (!selected) onChange(opt.value); }}
-                  className={`w-full text-start px-3 py-1.5 text-sm hover:bg-gray-50 ${selected ? 'text-pair-700 font-medium' : 'text-[#222]'}`}
+                  className={`w-full text-start px-3 py-1.5 text-sm hover:bg-canvas ${selected ? 'text-pair-700 font-semibold bg-pair-50' : 'text-ink'}`}
                 >
                   {opt.label}
                 </button>

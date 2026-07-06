@@ -1,5 +1,9 @@
-// Fallback mock data when PostgreSQL is not available
-// Mirrors the seed data structure
+// Fallback mock data when PostgreSQL is not available.
+// Course-bearing entities are derived from the real CCK catalog in
+// @masari/shared and mirror the mobile app's demo student (Noura, Diploma of
+// Computer Programming, semester 3) so every surface tells the same story.
+
+import { getCourse, getProgram, STUDENT_CLUBS } from '@masari/shared';
 
 const universityId = '550e8400-e29b-41d4-a716-446655440000';
 const studentId = '770e8400-e29b-41d4-a716-446655440002';
@@ -13,26 +17,26 @@ export const mockStudent = {
   name_en: 'Noura Al-Sabah',
   email: 'noura@cck.edu.kw',
   phone: '+96599001234',
-  major_name_ar: 'علوم الحاسب',
-  major_name_en: 'Computer Science',
+  major_name_ar: 'دبلوم برمجة الحاسوب',
+  major_name_en: 'Diploma of Computer Programming',
   cohort_year: 2024,
   enrollment_status: 'enrolled',
   gpa_cumulative: 3.45,
   preferred_language: 'ar',
-  university_name_ar: 'جامعة الخليج للعلوم والتكنولوجيا',
-  university_name_en: 'Gulf University for Science and Technology',
+  university_name_ar: 'الكلية الكندية في الكويت',
+  university_name_en: 'Canadian College of Kuwait',
   currency: 'KWD',
   timezone: 'Asia/Kuwait',
 };
 
 export const mockUniversity = {
   id: universityId,
-  name_ar: 'جامعة الخليج للعلوم والتكنولوجيا',
-  name_en: 'Gulf University for Science and Technology',
-  slug: 'gust',
+  name_ar: 'الكلية الكندية في الكويت',
+  name_en: 'Canadian College of Kuwait',
+  slug: 'cck',
   country: 'KW',
-  primary_color: '#1B4D3E',
-  secondary_color: '#D4AF37',
+  primary_color: '#006341',
+  secondary_color: '#76B82A',
   timezone: 'Asia/Kuwait',
   currency: 'KWD',
   sso_provider: 'saml',
@@ -48,109 +52,131 @@ export const mockTerm = {
   type: 'spring',
 };
 
-export const mockSchedule = [
-  {
-    enrollment_id: 'enr-001',
-    status: 'enrolled',
-    course_code: 'CS101',
-    course_name_ar: 'مقدمة في علوم الحاسب',
-    course_name_en: 'Introduction to Computer Science',
-    credit_hours: 3,
-    schedule_slots: [
-      { day: 'sunday', start_time: '08:00', end_time: '09:30', room: 'B-201' },
-      { day: 'tuesday', start_time: '08:00', end_time: '09:30', room: 'B-201' },
-    ],
-    room: 'B-201',
-    instructor_name_ar: 'د. أحمد المطيري',
-    instructor_name_en: 'Dr. Ahmed Al-Mutairi',
-    term_name_ar: mockTerm.name_ar,
-    term_name_en: mockTerm.name_en,
-  },
-  {
-    enrollment_id: 'enr-002',
-    status: 'enrolled',
-    course_code: 'MATH201',
-    course_name_ar: 'الرياضيات التطبيقية',
-    course_name_en: 'Applied Mathematics',
-    credit_hours: 3,
-    schedule_slots: [
-      { day: 'sunday', start_time: '10:00', end_time: '11:30', room: 'A-105' },
-      { day: 'tuesday', start_time: '10:00', end_time: '11:30', room: 'A-105' },
-    ],
-    room: 'A-105',
-    instructor_name_ar: 'د. فاطمة الراشد',
-    instructor_name_en: 'Dr. Fatima Al-Rashid',
-    term_name_ar: mockTerm.name_ar,
-    term_name_en: mockTerm.name_en,
-  },
-  {
-    enrollment_id: 'enr-003',
-    status: 'enrolled',
-    course_code: 'ENG102',
-    course_name_ar: 'اللغة الإنجليزية الأكاديمية',
-    course_name_en: 'Academic English',
-    credit_hours: 3,
-    schedule_slots: [
-      { day: 'monday', start_time: '13:00', end_time: '14:30', room: 'C-301' },
-      { day: 'wednesday', start_time: '13:00', end_time: '14:30', room: 'C-301' },
-    ],
-    room: 'C-301',
-    instructor_name_ar: 'أ. سارة العنزي',
-    instructor_name_en: 'Ms. Sara Al-Enezi',
-    term_name_ar: mockTerm.name_ar,
-    term_name_en: mockTerm.name_en,
-  },
-  {
-    enrollment_id: 'enr-004',
-    status: 'enrolled',
-    course_code: 'IS210',
-    course_name_ar: 'نظم المعلومات الإدارية',
-    course_name_en: 'Management Information Systems',
-    credit_hours: 3,
-    schedule_slots: [
-      { day: 'monday', start_time: '08:00', end_time: '09:30', room: 'D-102' },
-      { day: 'wednesday', start_time: '08:00', end_time: '09:30', room: 'D-102' },
-    ],
-    room: 'D-102',
-    instructor_name_ar: 'د. محمد الشمري',
-    instructor_name_en: 'Dr. Mohammed Al-Shammari',
-    term_name_ar: mockTerm.name_ar,
-    term_name_en: mockTerm.name_en,
-  },
-];
+// --- Real CCK catalog projection: Noura, Diploma of Computer Programming, sem 3 ---
+const _program = getProgram('diploma-cp')!;
+const _completedCodes = _program.semesters.filter((s) => s.number < 3).flatMap((s) => s.courses);
+const _currentCodes = _program.semesters.find((s) => s.number === 3)!.courses;
+const _futureCodes = _program.semesters.filter((s) => s.number > 3).flatMap((s) => s.courses);
+const _completedGrades: Record<string, string> = {
+  CST8101: 'A', CST8116: 'A-', CST8215: 'B+', CST8300: 'A', ENL1813: 'B+', MAT8001: 'B',
+  CST2355: 'A-', CST8102: 'B+', CST8284: 'B', CST8285: 'A-', ENL1823: 'A', GED0022: 'B+',
+};
+const _gradePoints: Record<string, number> = {
+  A: 4.0, 'A-': 3.7, 'B+': 3.3, B: 3.0, 'B-': 2.7, 'C+': 2.3, C: 2.0, 'C-': 1.7, D: 1.0, F: 0,
+};
+const _enrId = (code: string) => `enr-${String(_currentCodes.indexOf(code) + 1).padStart(3, '0')}`;
+const _disp = (code: string) => {
+  const c = getCourse(code);
+  return {
+    course_code: code,
+    course_name_en: c?.name_en ?? code,
+    course_name_ar: c?.name_ar ?? c?.name_en ?? code,
+    credit_hours: c?.credit_hours ?? 3,
+  };
+};
+const _instructor = (code: string) => {
+  // Real CCK faculty; Arabic names aren't in the source docs, so name_en is reused.
+  const map: Record<string, string> = {
+    CST2234: 'Ahmad Jaber Hadam Mayahi',
+    CST2335: 'MennaTullah Serajeldin Roushdy Ali',
+    CST8109: 'Seyed Ghasem Saatchi',
+    CST8283: 'Tareq Ahmad Ali Al-Zayyat',
+    CST8288: 'Seyed Ghasem Saatchi',
+  };
+  const name = map[code] ?? 'Ahmad Jaber Hadam Mayahi';
+  return { instructor_name_ar: name, instructor_name_en: name };
+};
+const _slots: Record<string, { day: string; start_time: string; end_time: string; room: string }[]> = {
+  CST2234: [{ day: 'sunday', start_time: '08:00', end_time: '10:00', room: 'B-201' }, { day: 'tuesday', start_time: '08:00', end_time: '10:00', room: 'B-201' }],
+  CST2335: [{ day: 'sunday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }, { day: 'tuesday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }],
+  CST8109: [{ day: 'monday', start_time: '08:00', end_time: '10:00', room: 'LAB-2' }, { day: 'wednesday', start_time: '08:00', end_time: '10:00', room: 'LAB-2' }],
+  CST8283: [{ day: 'monday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }, { day: 'wednesday', start_time: '10:15', end_time: '12:15', room: 'LAB-1' }],
+  CST8288: [{ day: 'tuesday', start_time: '12:30', end_time: '14:30', room: 'B-203' }, { day: 'thursday', start_time: '12:30', end_time: '14:30', room: 'B-203' }],
+};
+const _completedCredits = _completedCodes.reduce((s, c) => s + (getCourse(c)?.credit_hours ?? 0), 0);
+const _currentCredits = _currentCodes.reduce((s, c) => s + (getCourse(c)?.credit_hours ?? 0), 0);
+const _cumulativeGpa = (() => {
+  let pts = 0, cr = 0;
+  for (const code of _completedCodes) {
+    const g = _completedGrades[code];
+    const c = getCourse(code);
+    if (g && c) { pts += _gradePoints[g] * c.credit_hours; cr += c.credit_hours; }
+  }
+  return cr ? Math.round((pts / cr) * 100) / 100 : 0;
+})();
+
+export const mockSchedule = _currentCodes.map((code) => ({
+  enrollment_id: _enrId(code),
+  status: 'enrolled',
+  ..._disp(code),
+  schedule_slots: _slots[code] ?? [],
+  room: _slots[code]?.[0].room ?? 'TBA',
+  ..._instructor(code),
+  term_name_ar: mockTerm.name_ar,
+  term_name_en: mockTerm.name_en,
+}));
 
 export const mockGrades = {
-  cumulative_gpa: 3.45,
-  credits_completed: 45,
-  academic_standing: 'good_standing',
+  cumulative_gpa: _cumulativeGpa,
+  credits_completed: _completedCredits,
+  academic_standing: _cumulativeGpa >= 2.0 ? 'good_standing' : 'probation',
   gpa_history: [
-    { term_name_ar: 'خريف ٢٠٢٤-٢٠٢٥', term_name_en: 'Fall 2024-2025', gpa: 3.2 },
-    { term_name_ar: 'ربيع ٢٠٢٤-٢٠٢٥', term_name_en: 'Spring 2024-2025', gpa: 3.35 },
-    { term_name_ar: 'خريف ٢٠٢٥-٢٠٢٦', term_name_en: 'Fall 2025-2026', gpa: 3.4 },
-    { term_name_ar: 'ربيع ٢٠٢٥-٢٠٢٦', term_name_en: 'Spring 2025-2026', gpa: 3.45 },
+    { term_name_ar: 'خريف ٢٠٢٤-٢٠٢٥', term_name_en: 'Fall 2024-2025', gpa: 3.45 },
+    { term_name_ar: 'ربيع ٢٠٢٤-٢٠٢٥', term_name_en: 'Spring 2024-2025', gpa: 3.55 },
   ],
-  courses: [
-    { enrollment_id: 'enr-001', course_code: 'CS101', course_name_ar: 'مقدمة في علوم الحاسب', course_name_en: 'Introduction to Computer Science', credit_hours: 3, grade: 'A-', grade_points: 3.7, status: 'enrolled', term_name_ar: mockTerm.name_ar, term_name_en: mockTerm.name_en, term_id: termId },
-    { enrollment_id: 'enr-002', course_code: 'MATH201', course_name_ar: 'الرياضيات التطبيقية', course_name_en: 'Applied Mathematics', credit_hours: 3, grade: 'B+', grade_points: 3.3, status: 'enrolled', term_name_ar: mockTerm.name_ar, term_name_en: mockTerm.name_en, term_id: termId },
-    { enrollment_id: 'enr-003', course_code: 'ENG102', course_name_ar: 'اللغة الإنجليزية الأكاديمية', course_name_en: 'Academic English', credit_hours: 3, grade: null, grade_points: null, status: 'enrolled', term_name_ar: mockTerm.name_ar, term_name_en: mockTerm.name_en, term_id: termId },
-    { enrollment_id: 'enr-004', course_code: 'IS210', course_name_ar: 'نظم المعلومات الإدارية', course_name_en: 'Management Information Systems', credit_hours: 3, grade: null, grade_points: null, status: 'enrolled', term_name_ar: mockTerm.name_ar, term_name_en: mockTerm.name_en, term_id: termId },
-  ],
+  courses: _currentCodes.map((code) => ({
+    enrollment_id: _enrId(code),
+    ..._disp(code),
+    grade: null as string | null,
+    grade_points: null as number | null,
+    status: 'enrolled',
+    term_name_ar: mockTerm.name_ar,
+    term_name_en: mockTerm.name_en,
+    term_id: termId,
+  })),
 };
 
-export const mockAttendance = [
-  { enrollment_id: 'enr-001', course_code: 'CS101', course_name_ar: 'مقدمة في علوم الحاسب', course_name_en: 'Introduction to Computer Science', total_sessions: 8, present: 6, absent: 1, excused: 1, late: 0, attendance_percentage: 75, warning: false },
-  { enrollment_id: 'enr-002', course_code: 'MATH201', course_name_ar: 'الرياضيات التطبيقية', course_name_en: 'Applied Mathematics', total_sessions: 8, present: 7, absent: 0, excused: 1, late: 0, attendance_percentage: 87.5, warning: false },
-  { enrollment_id: 'enr-003', course_code: 'ENG102', course_name_ar: 'اللغة الإنجليزية الأكاديمية', course_name_en: 'Academic English', total_sessions: 8, present: 5, absent: 2, excused: 1, late: 0, attendance_percentage: 62.5, warning: true },
-  { enrollment_id: 'enr-004', course_code: 'IS210', course_name_ar: 'نظم المعلومات الإدارية', course_name_en: 'Management Information Systems', total_sessions: 8, present: 8, absent: 0, excused: 0, late: 0, attendance_percentage: 100, warning: false },
-];
+const _absence: Record<string, { absent: number; excused: number; late: number }> = {
+  CST2234: { absent: 0, excused: 1, late: 1 },
+  CST2335: { absent: 1, excused: 0, late: 0 },
+  CST8109: { absent: 2, excused: 1, late: 0 },
+  CST8283: { absent: 0, excused: 0, late: 2 },
+  CST8288: { absent: 1, excused: 2, late: 1 },
+};
+export const mockAttendance = _currentCodes.map((code) => {
+  const a = _absence[code] ?? { absent: 0, excused: 0, late: 0 };
+  const total = 16;
+  const present = total - a.absent - a.excused - a.late;
+  return {
+    enrollment_id: _enrId(code),
+    ..._disp(code),
+    total_sessions: total,
+    present,
+    absent: a.absent,
+    excused: a.excused,
+    late: a.late,
+    attendance_percentage: Math.round((present / total) * 1000) / 10,
+    warning: a.absent * 2 >= 4, // 4-credit courses → first warning at 4 absent hours
+  };
+});
 
-export const mockAssignments = [
-  { id: 'asg-001', title_ar: 'واجب البرمجة الأول', title_en: 'Programming Assignment 1', course_code: 'CS101', course_name_ar: 'مقدمة في علوم الحاسب', course_name_en: 'Introduction to Computer Science', due_date: '2026-04-12T23:59:00Z', max_score: 20, type: 'homework', enrollment_id: 'enr-001' },
-  { id: 'asg-002', title_ar: 'اختبار قصير - الأسبوع ٨', title_en: 'Quiz - Week 8', course_code: 'CS101', course_name_ar: 'مقدمة في علوم الحاسب', course_name_en: 'Introduction to Computer Science', due_date: '2026-04-15T23:59:00Z', max_score: 10, type: 'quiz', enrollment_id: 'enr-001' },
-  { id: 'asg-003', title_ar: 'حل مسائل التكامل', title_en: 'Integration Problem Set', course_code: 'MATH201', course_name_ar: 'الرياضيات التطبيقية', course_name_en: 'Applied Mathematics', due_date: '2026-04-18T23:59:00Z', max_score: 15, type: 'homework', enrollment_id: 'enr-002' },
-  { id: 'asg-004', title_ar: 'مقال أكاديمي', title_en: 'Academic Essay', course_code: 'ENG102', course_name_ar: 'اللغة الإنجليزية الأكاديمية', course_name_en: 'Academic English', due_date: '2026-04-20T23:59:00Z', max_score: 25, type: 'project', enrollment_id: 'enr-003' },
-  { id: 'asg-005', title_ar: 'مشروع قاعدة البيانات', title_en: 'Database Project', course_code: 'IS210', course_name_ar: 'نظم المعلومات الإدارية', course_name_en: 'Management Information Systems', due_date: '2026-04-25T23:59:00Z', max_score: 30, type: 'project', enrollment_id: 'enr-004' },
+const _assignmentSpecs: { code: string; title_ar: string; title_en: string; due: string; max: number; type: string }[] = [
+  { code: 'CST2234', title_ar: 'مخطط حالات الاستخدام', title_en: 'Use-Case Diagram', due: '2026-05-17T23:59:00Z', max: 20, type: 'homework' },
+  { code: 'CST2335', title_ar: 'تطبيق واجهة الجوال', title_en: 'Mobile UI App', due: '2026-05-19T23:59:00Z', max: 30, type: 'project' },
+  { code: 'CST8109', title_ar: 'اختبار قصير - برمجة المقابس', title_en: 'Quiz - Socket Programming', due: '2026-05-15T23:59:00Z', max: 10, type: 'quiz' },
+  { code: 'CST8283', title_ar: 'تقرير الأعمال', title_en: 'Business Report Program', due: '2026-05-21T23:59:00Z', max: 25, type: 'homework' },
+  { code: 'CST8288', title_ar: 'مشروع أنماط التصميم', title_en: 'Design Patterns Project', due: '2026-05-26T23:59:00Z', max: 40, type: 'project' },
 ];
+export const mockAssignments = _assignmentSpecs.map((a, i) => ({
+  id: `asg-${String(i + 1).padStart(3, '0')}`,
+  title_ar: a.title_ar,
+  title_en: a.title_en,
+  ..._disp(a.code),
+  due_date: a.due,
+  max_score: a.max,
+  type: a.type,
+  enrollment_id: _enrId(a.code),
+}));
 
 export const mockFees = {
   balance_due: 500,
@@ -168,19 +194,46 @@ export const mockFees = {
 };
 
 export const mockDegreeAudit = {
-  total_credits_required: 136,
-  credits_completed: 45,
-  credits_in_progress: 12,
-  credits_remaining: 79,
-  completion_percentage: 33,
-  courses: mockGrades.courses.map(c => ({
-    code: c.course_code,
-    name_ar: c.course_name_ar,
-    name_en: c.course_name_en,
-    credits: c.credit_hours,
-    status: c.grade ? 'completed' : 'in_progress',
-    grade: c.grade,
-  })),
+  total_credits_required: _program.total_credits,
+  credits_completed: _completedCredits,
+  credits_in_progress: _currentCredits,
+  credits_remaining: _program.total_credits - _completedCredits - _currentCredits,
+  completion_percentage: Math.round((_completedCredits / _program.total_credits) * 100),
+  courses: [
+    ..._completedCodes.map((code) => {
+      const c = getCourse(code);
+      return {
+        code,
+        name_ar: c?.name_ar ?? c?.name_en ?? code,
+        name_en: c?.name_en ?? code,
+        credits: c?.credit_hours ?? 3,
+        status: 'completed',
+        grade: _completedGrades[code] ?? null,
+      };
+    }),
+    ..._currentCodes.map((code) => {
+      const c = getCourse(code);
+      return {
+        code,
+        name_ar: c?.name_ar ?? c?.name_en ?? code,
+        name_en: c?.name_en ?? code,
+        credits: c?.credit_hours ?? 3,
+        status: 'in_progress',
+        grade: null as string | null,
+      };
+    }),
+    ..._futureCodes.map((code) => {
+      const c = getCourse(code);
+      return {
+        code,
+        name_ar: c?.name_ar ?? c?.name_en ?? code,
+        name_en: c?.name_en ?? code,
+        credits: c?.credit_hours ?? 3,
+        status: 'not_started',
+        grade: null as string | null,
+      };
+    }),
+  ],
 };
 
 export const mockEvents = [
@@ -189,11 +242,29 @@ export const mockEvents = [
   { id: 'evt-003', university_id: universityId, title_ar: 'محاضرة: ريادة الأعمال في الكويت', title_en: 'Lecture: Entrepreneurship in Kuwait', description_ar: 'محاضرة من رائد أعمال كويتي ناجح', description_en: 'Lecture by a successful Kuwaiti entrepreneur', start_time: '2026-04-18T18:00:00Z', end_time: '2026-04-18T20:00:00Z', location_ar: 'القاعة الكبرى', location_en: 'Grand Hall', organizer_type: 'university', category: 'lecture', capacity: 150, rsvp_count: 45, is_rsvped: false },
 ];
 
-export const mockClubs = [
-  { id: 'club-001', university_id: universityId, name_ar: 'نادي البرمجة', name_en: 'Coding Club', description_ar: 'نادي لمحبي البرمجة وتطوير البرمجيات', description_en: 'A club for coding enthusiasts', category: 'technology', member_count: 45, status: 'active', is_member: false },
-  { id: 'club-002', university_id: universityId, name_ar: 'نادي ريادة الأعمال', name_en: 'Entrepreneurship Club', description_ar: 'دعم رواد الأعمال الشباب', description_en: 'Supporting young entrepreneurs', category: 'business', member_count: 32, status: 'active', is_member: false },
-  { id: 'club-003', university_id: universityId, name_ar: 'النادي الثقافي', name_en: 'Cultural Club', description_ar: 'فعاليات ثقافية وأدبية متنوعة', description_en: 'Cultural and literary events', category: 'culture', member_count: 58, status: 'active', is_member: true },
-];
+// Real CCK student clubs (Student Life Department).
+const _clubMeta: Record<string, { category: string; members: number; desc_ar: string; desc_en: string }> = {
+  media: { category: 'media', members: 41, desc_ar: 'إنتاج المحتوى الإعلامي وتغطية فعاليات الكلية.', desc_en: 'Media content production and coverage of college events.' },
+  community: { category: 'community', members: 56, desc_ar: 'مبادرات تطوعية وخدمة المجتمع.', desc_en: 'Volunteering initiatives and community service.' },
+  'student-workers': { category: 'careers', members: 23, desc_ar: 'دعم الطلبة الذين يجمعون بين الدراسة والعمل.', desc_en: 'Support for students balancing study and work.' },
+  'computer-science': { category: 'technology', members: 48, desc_ar: 'هاكاثونات وورش برمجة لطلبة التقنية.', desc_en: 'Hackathons and coding workshops for tech students.' },
+  debate: { category: 'culture', members: 34, desc_ar: 'مناظرات وتدريب على الإلقاء والحجاج.', desc_en: 'Debates and training in public speaking and argumentation.' },
+};
+export const mockClubs = STUDENT_CLUBS.map((club) => {
+  const meta = _clubMeta[club.slug] ?? { category: 'general', members: 20, desc_ar: '', desc_en: '' };
+  return {
+    id: `club-${club.slug}`,
+    university_id: universityId,
+    name_ar: club.name_ar ?? club.name_en,
+    name_en: club.name_en,
+    description_ar: meta.desc_ar,
+    description_en: meta.desc_en,
+    category: meta.category,
+    member_count: meta.members,
+    status: 'active',
+    is_member: club.slug === 'computer-science',
+  };
+});
 
 export const mockStudentSummary = {
   student: mockStudent,
@@ -232,17 +303,31 @@ export const mockAcademicCalendar = [
   { id: 'cal-008', type: 'registration', title_ar: 'تسجيل الفصل الصيفي', title_en: 'Summer Registration', start_date: '2026-05-15', end_date: '2026-05-25' },
 ];
 
-// Available courses for registration
-export const mockAvailableCourses = [
-  { id: 'sec-101', course_code: 'CS201', name_ar: 'هياكل البيانات', name_en: 'Data Structures', credits: 3, prerequisites: ['CS101'], seats_available: 12, total_seats: 35, instructor_name: 'Dr. Ahmad', schedule: 'Sun/Tue 10:00-11:30' },
-  { id: 'sec-102', course_code: 'CS202', name_ar: 'قواعد البيانات', name_en: 'Database Systems', credits: 3, prerequisites: ['CS101'], seats_available: 5, total_seats: 30, instructor_name: 'Dr. Sarah', schedule: 'Mon/Wed 14:00-15:30' },
-  { id: 'sec-103', course_code: 'MATH301', name_ar: 'الإحصاء', name_en: 'Statistics', credits: 3, prerequisites: ['MATH201'], seats_available: 20, total_seats: 40, instructor_name: 'Dr. Mohammed', schedule: 'Sun/Tue 12:00-13:30' },
-  { id: 'sec-104', course_code: 'ENG201', name_ar: 'الكتابة الأكاديمية', name_en: 'Academic Writing', credits: 3, prerequisites: ['ENG102'], seats_available: 0, total_seats: 25, instructor_name: 'Dr. Lisa', schedule: 'Mon/Wed 10:00-11:30' },
-  { id: 'sec-105', course_code: 'CS301', name_ar: 'هندسة البرمجيات', name_en: 'Software Engineering', credits: 3, prerequisites: ['CS201'], seats_available: 18, total_seats: 35, instructor_name: 'Dr. Fahad', schedule: 'Sun/Tue 14:00-15:30' },
-  { id: 'sec-106', course_code: 'IS301', name_ar: 'أمن المعلومات', name_en: 'Information Security', credits: 3, prerequisites: ['IS210'], seats_available: 8, total_seats: 30, instructor_name: 'Dr. Khaled', schedule: 'Mon/Wed 12:00-13:30' },
-  { id: 'sec-107', course_code: 'CS303', name_ar: 'الذكاء الاصطناعي', name_en: 'Artificial Intelligence', credits: 3, prerequisites: ['CS201', 'MATH301'], seats_available: 15, total_seats: 30, instructor_name: 'Dr. Ali', schedule: 'Tue/Thu 10:00-11:30' },
-  { id: 'sec-108', course_code: 'GEN101', name_ar: 'مهارات التواصل', name_en: 'Communication Skills', credits: 2, prerequisites: [], seats_available: 25, total_seats: 50, instructor_name: 'Dr. Nadia', schedule: 'Wed 16:00-18:00' },
+// Advising meetings scheduled by an advisor/admin (no-DB fallback store).
+// createAdvisingMeeting pushes into this array when the database is unavailable.
+export const mockAdvisingMeetings: any[] = [
+  { id: 'adv-001', student_id: '770e8400-e29b-41d4-a716-446655440002', type: 'gpa_warning', title_ar: 'موعد إنذار المعدل', title_en: 'GPA Warning Appointment', advisor_ar: 'د. أحمد الغامدي', advisor_en: 'Dr. Ahmed Al-Ghamdi', scheduled_at: '2026-04-22T11:00:00Z', location_ar: 'مبنى التسجيل، مكتب 204', location_en: 'Registration Building, Office 204', notes_ar: 'يرجى إحضار الجدول الدراسي الحالي.', notes_en: 'Please bring your current course schedule.', status: 'scheduled' },
 ];
+
+// Available courses for registration
+// Next semester (semester 4) courses, offered as registrable sections.
+const _seatRange = [12, 5, 0, 18, 22];
+export const mockAvailableCourses = _futureCodes.map((code, i) => {
+  const c = getCourse(code);
+  const inst = _instructor(code);
+  return {
+    id: `sec-${code}`,
+    course_code: code,
+    name_ar: c?.name_ar ?? c?.name_en ?? code,
+    name_en: c?.name_en ?? code,
+    credits: c?.credit_hours ?? 3,
+    prerequisites: c?.prerequisites ?? [],
+    seats_available: _seatRange[i % _seatRange.length],
+    total_seats: 35,
+    instructor_name: inst.instructor_name_en,
+    schedule: 'Sun/Tue 10:00-12:00',
+  };
+});
 
 // Payment history
 export const mockPaymentHistory = [
@@ -302,9 +387,9 @@ export const mockLostFound = [
 
 // Social - Study groups
 export const mockStudyGroups = [
-  { id: 'sg-001', course_code: 'CS101', name_ar: 'مجموعة دراسة البرمجة', name_en: 'Programming Study Group', member_count: 8, next_meeting: '2026-04-10T16:00:00Z', location: 'Library Room L2' },
-  { id: 'sg-002', course_code: 'MATH201', name_ar: 'مجموعة دراسة الرياضيات', name_en: 'Math Study Group', member_count: 5, next_meeting: '2026-04-11T14:00:00Z', location: 'Student Center SC1' },
-  { id: 'sg-003', course_code: 'ENG102', name_ar: 'مجموعة دراسة اللغة الإنجليزية', name_en: 'English Study Group', member_count: 6, next_meeting: '2026-04-12T10:00:00Z', location: 'Library Room L3' },
+  { id: 'sg-001', course_code: 'CST8109', name_ar: 'مجموعة دراسة برمجة الشبكات', name_en: 'Network Programming Study Group', member_count: 8, next_meeting: '2026-05-16T16:00:00Z', location: 'Library Room L2' },
+  { id: 'sg-002', course_code: 'CST8288', name_ar: 'مجموعة دراسة أنماط التصميم', name_en: 'Design Patterns Study Group', member_count: 5, next_meeting: '2026-05-17T14:00:00Z', location: 'Student Center SC1' },
+  { id: 'sg-003', course_code: 'CST2335', name_ar: 'مجموعة دراسة برمجة الجوال', name_en: 'Mobile Programming Study Group', member_count: 6, next_meeting: '2026-05-18T10:00:00Z', location: 'Library Room L3' },
 ];
 
 // Social - Peer mentoring
@@ -319,19 +404,8 @@ export const mockAnonymousQA = [
   { id: 'qa-001', question_ar: 'هل يمكن سحب مادة بعد منتصف الفصل؟', question_en: 'Can I drop a course after midterms?', answer_ar: 'نعم، لكن ستظهر بدرجة W في السجل الأكاديمي', answer_en: 'Yes, but it will show as W on your transcript', upvotes: 24, created_at: '2026-04-06' },
   { id: 'qa-002', question_ar: 'كيف أقدم على منحة دراسية؟', question_en: 'How do I apply for a scholarship?', answer_ar: 'تواصل مع مكتب المساعدات المالية في مبنى الإدارة', answer_en: 'Contact the Financial Aid office in the Administration Building', upvotes: 18, created_at: '2026-04-05' },
   { id: 'qa-003', question_ar: 'هل فيه خدمة إرشاد نفسي بالجامعة؟', question_en: 'Is there counseling service at the university?', answer_ar: 'نعم، مركز الإرشاد الطلابي مفتوح يومياً من ٨ صباحاً حتى ٤ عصراً', answer_en: 'Yes, the Student Counseling Center is open daily 8 AM - 4 PM', upvotes: 31, created_at: '2026-04-03' },
-  { id: 'qa-004', question_ar: 'ما هي أسهل مادة اختيارية؟', question_en: 'What is the easiest elective?', answer_ar: 'يختلف حسب تخصصك، لكن GEN101 مهارات التواصل شائعة', answer_en: 'It depends on your major, but GEN101 Communication Skills is popular', upvotes: 42, created_at: '2026-04-01' },
+  { id: 'qa-004', question_ar: 'ما هي أسهل مادة عامة؟', question_en: 'What is the easiest general course?', answer_ar: 'يختلف حسب تخصصك، لكن GEN2003 نمط الحياة الصحية شائعة', answer_en: 'It depends on your major, but GEN2003 Healthy Lifestyle is popular', upvotes: 42, created_at: '2026-04-01' },
   { id: 'qa-005', question_ar: 'هل يمكنني تأجيل الامتحان النهائي؟', question_en: 'Can I defer my final exam?', answer_ar: 'فقط بعذر طبي موثق، قدم الطلب قبل أسبوع من الامتحان', answer_en: 'Only with documented medical excuse, submit request 1 week before exam', upvotes: 15, created_at: '2026-03-28' },
-];
-
-// Financial aid
-export const mockFinancialAid = [
-  { id: 'aid-001', name_ar: 'منحة التفوق الأكاديمي', name_en: 'Academic Excellence Scholarship', amount: 2000, currency: 'KWD', status: 'active', semester: 'Spring 2026', requirements_met: true },
-  { id: 'aid-002', name_ar: 'منحة الحاجة المالية', name_en: 'Financial Need Grant', amount: 1000, currency: 'KWD', status: 'pending_documents', semester: 'Spring 2026', requirements_met: false, missing_documents: ['Income proof', 'ID copy'] },
-];
-
-// Refund tracking
-export const mockRefunds = [
-  { id: 'ref-001', amount: 100, currency: 'KWD', reason_ar: 'انسحاب من مادة', reason_en: 'Course withdrawal', status: 'processing', initiated_at: '2026-04-01', estimated_completion: '2026-04-10' },
 ];
 
 // Transcript requests

@@ -1,3 +1,4 @@
+// 4px base scale.
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -8,15 +9,24 @@ export const spacing = {
   '2xl': 32,
   '3xl': 40,
   '4xl': 48,
+  '5xl': 64,
 } as const;
 
-// CCK radius — tight 3px across all interactive elements.
-// No pill buttons, no large rounded cards. `full` reserved for avatars.
+// Radius — SHARP and GEOMETRIC by design.
+// CCK identity is precise / institutional / chevron-and-triangle.
+// Rounded corners read as generic; everything sits at the floor:
+//   sm   0  — chips, badges, pills, segmented controls (totally sharp)
+//   md   2  — buttons, inputs, list rows (barely-there tap softening)
+//   lg   4  — cards, sheets (minimal containment)
+//   xl   8  — top of bottom sheets only (shape recognition)
+//   full     — avatars, status dots, genuine circles only
 export const borderRadius = {
-  sm: 3,
-  md: 3,
+  none: 0,
+  sm: 0,
+  md: 2,
   lg: 4,
-  xl: 6,
+  xl: 8,
+  '2xl': 12,
   full: 9999,
 } as const;
 

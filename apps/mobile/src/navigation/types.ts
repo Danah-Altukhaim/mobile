@@ -1,4 +1,5 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { ServiceRequestType } from '@masari/shared';
 
 // Auth Stack
 export type AuthStackParamList = {
@@ -25,11 +26,7 @@ export type AcademicsStackParamList = {
   CourseRegistration: undefined;
   CourseRecommendations: undefined;
   TranscriptRequest: undefined;
-};
-
-// AI Stack
-export type AIStackParamList = {
-  AIChat: undefined;
+  GpaCalculator: undefined;
 };
 
 // Campus Stack
@@ -41,49 +38,76 @@ export type CampusStackParamList = {
   ClubDetail: { clubId: string };
   PrayerTimes: undefined;
   CampusMap: undefined;
-  DiningServices: undefined;
   LostAndFound: undefined;
   NewsFeed: undefined;
+  Channels: undefined;
+  Channel: { channelId: string; kind: 'class' | 'club'; title?: string };
 };
 
-// Social Stack
-export type SocialStackParamList = {
-  SocialHub: undefined;
-  SocialFeed: undefined;
-  StudyGroups: undefined;
-  DirectMessages: undefined;
-  Conversation: { conversationId: string };
-  PeerMentoring: undefined;
-  AnonymousQA: undefined;
+// Services Stack
+export type ServicesStackParamList = {
+  ServicesHub: undefined;
+  MyRequests: undefined;
+  ServiceRequestList: {
+    titleKey: string;
+    descriptionKey?: string;
+    types: ServiceRequestType[];
+    formRoute: keyof ServicesStackParamList;
+    formParams?: Record<string, unknown>;
+  };
+  ServiceRequestDetail: { requestId: string };
+  LetterRequest: {
+    serviceType:
+      | 'twimc'
+      | 'twimc_balance'
+      | 'expected_graduation_docs'
+      | 'puc_letter_with_stipend'
+      | 'puc_letter_no_stipend';
+  };
+  ExcusedAbsence: undefined;
+  WithdrawalRequest: { kind: 'semester' | 'college' };
+  SocialAllowance: undefined;
+  BankDetailsChange: undefined;
+  GradeAppeal: undefined;
+  StudentIdServices: undefined;
+  ContactDirectory: undefined;
+  Helpdesk: undefined;
+  Complaint: undefined;
+  Suggestion: undefined;
+  SportDiscount: undefined;
+  TransferCreditEquivalency: undefined;
+  ProfileUpdate: undefined;
 };
 
-// Profile Stack
-export type ProfileStackParamList = {
-  ProfileScreen: undefined;
+// Account Stack — root-level modal stack opened from the profile sheet.
+// Holds the heavier "settings + finance" surfaces that don't deserve a tab
+// of their own now that Profile lives in a bottom sheet.
+export type AccountStackParamList = {
   Settings: undefined;
   NotificationPreferences: undefined;
+  CustomizeHome: undefined;
   PaymentDashboard: undefined;
   PaymentMethod: { amount: number; feeIds: string[] };
   PaymentConfirmation: { paymentId: string };
   PaymentHistory: undefined;
-  FinancialAid: undefined;
   InstallmentPlans: undefined;
-  RefundTracking: undefined;
+  FeeSchedule: undefined;
+  FeeCalculator: undefined;
+  Clearance: undefined;
 };
 
-// Main Tabs
+// Main Tabs — Profile tab is gone; the avatar in each header opens the sheet.
 export type MainTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList>;
   AcademicsTab: NavigatorScreenParams<AcademicsStackParamList>;
-  AITab: NavigatorScreenParams<AIStackParamList>;
+  ServicesTab: NavigatorScreenParams<ServicesStackParamList>;
   CampusTab: NavigatorScreenParams<CampusStackParamList>;
-  SocialTab: NavigatorScreenParams<SocialStackParamList>;
-  ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 // Root
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
+  Account: NavigatorScreenParams<AccountStackParamList>;
   AIAdvisor: undefined;
 };

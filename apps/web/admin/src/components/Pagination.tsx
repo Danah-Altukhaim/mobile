@@ -19,14 +19,14 @@ export default function Pagination({ page, totalPages, totalItems, pageSize, onP
 
   return (
     <nav aria-label="Pagination" className="flex items-center justify-between mt-4 px-2">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted">
         {t('common.paginationRange', { from, to, total: totalItems })}
       </p>
       <div className="flex items-center gap-2">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50 disabled:hover:bg-white"
+          className="btn btn-outline btn-sm disabled:opacity-40"
         >
           {t('common.previous')}
         </button>
@@ -47,10 +47,10 @@ export default function Pagination({ page, totalPages, totalItems, pageSize, onP
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
               aria-current={isCurrent ? 'page' : undefined}
-              className={`w-8 h-8 text-sm rounded-lg ${
+              className={`w-8 h-8 text-sm rounded-sm font-semibold transition-colors ${
                 isCurrent
                   ? 'bg-pair-600 text-white'
-                  : 'border border-gray-300 hover:bg-gray-50'
+                  : 'border border-line-strong text-body hover:bg-pair-50 hover:border-pair-300'
               }`}
             >
               {pageNum}
@@ -60,7 +60,7 @@ export default function Pagination({ page, totalPages, totalItems, pageSize, onP
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50 disabled:hover:bg-white"
+          className="btn btn-outline btn-sm disabled:opacity-40"
         >
           {t('common.next')}
         </button>

@@ -3,9 +3,10 @@
 import {
   EQUIVALENCY, PAAET_EQUIVALENCY, EQUIVALENCY_RULES,
   calcTuition, STANDARD_GRANT_RATE, SPORT_DISCOUNT_RATE,
-  MISC_FEES_KWD, INSTALLMENT_WEEKS,
+  MISC_FEES_KWD, INSTALLMENT_WEEKS, SEAT_RESERVATION_FEE_KWD,
   type ProgramTrack, type PaymentMethod,
 } from '@masari/shared';
+import { STUDENT_RECORDS, toDirectoryEntry } from './student-records';
 
 const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 
@@ -325,7 +326,7 @@ const PAYMENT_ANALYTICS = {
     { cohort: '2026', billed: 3800000, collected: 2920000, rate: 76.8 },
   ],
   // Payment methods accepted by CCK Finance: K-net, Visa, Mastercard, Cash
-  // (Finance Department doc — Apple Pay & Mada are not accepted).
+  // (Finance Department doc - Apple Pay & Mada are not accepted).
   by_method: [
     { method: 'payments.method.knet', count: 2840, amount: 9650000, percentage: 58.0 },
     { method: 'payments.method.visa', count: 1180, amount: 4120000, percentage: 24.8 },
@@ -342,14 +343,14 @@ const PAYMENT_ANALYTICS = {
 };
 
 // ---------------------------------------------------------------------------
-// Finance Department — student accounts, installments and clearances.
+// Finance Department - student accounts, installments and clearances.
 // Account figures are derived live from @masari/shared `calcTuition`, so the
 // admin numbers match exactly what the student app payment portal shows.
 // Sources: "Finance Department.docx", "Course Installment Details.xlsx",
 // "CCK Registration & other fees, finance withdraw policy.pdf".
 // ---------------------------------------------------------------------------
 
-/** Study week the current semester sits in — drives installment due/overdue. */
+/** Study week the current semester sits in - drives installment due/overdue. */
 const CURRENT_STUDY_WEEK = 8;
 
 export type FinanceDiscount = 'grant' | 'sport' | 'none';
@@ -372,12 +373,12 @@ interface FinanceStudentSeed {
   level: 'diploma' | 'foundation' | 'bachelor';
   credits: number;
   discount: FinanceDiscount;
-  /** Funding source — PUC-sponsored vs self-funded. */
+  /** Funding source - PUC-sponsored vs self-funded. */
   funding: 'puc' | 'self';
   /** Installments settled so far (0-3, due study weeks 4 / 8 / 12). */
   installments_paid: 0 | 1 | 2 | 3;
   method: PaymentMethod;
-  /** 5 KWD late fee outstanding — blocks registration in the student app. */
+  /** 5 KWD late fee outstanding - blocks registration in the student app. */
   late_fee: boolean;
   /** Carrying a repeated course (Finance discount-exclusion rule). */
   repeated_course: boolean;
@@ -745,7 +746,10 @@ export type RequestType =
   | 'puc_no_aid'
   | 'industrial_cert'
   | 'lost_id'
-  | 'update_id_photo';
+  | 'update_id_photo'
+  | 'bank_change'
+  | 'change_of_grade'
+  | 'incomplete_grade';
 
 export type RequestStatus = 'submitted' | 'in_progress' | 'completed' | 'rejected' | 'cancelled';
 
@@ -780,7 +784,7 @@ export type RequestStageStatus = 'on_track' | 'due_soon' | 'due_today' | 'overdu
 
 export interface RequestStageInfo {
   step: RequestWorkflowStep;
-  department: 'registration' | 'finance' | 'advisor' | 'puc' | 'it' | null;
+  department: 'registration' | 'finance' | 'advisor' | 'puc' | 'it' | 'academic' | null;
   startedAt: string;
   daysAtStage: number;
   slaDays: number;
@@ -789,7 +793,7 @@ export interface RequestStageInfo {
   status: RequestStageStatus;
 }
 
-const STEP_DEPARTMENT: Record<string, 'registration' | 'finance' | 'advisor' | 'puc' | 'it'> = {
+const STEP_DEPARTMENT: Record<string, 'registration' | 'finance' | 'advisor' | 'puc' | 'it' | 'academic'> = {
   submitted: 'registration',
   paid: 'finance',
   in_progress: 'registration',
@@ -800,6 +804,13 @@ const STEP_DEPARTMENT: Record<string, 'registration' | 'finance' | 'advisor' | '
   advisor: 'advisor',
   puc: 'puc',
   it: 'it',
+  // Academic-request workflow (Change of Grade / Incomplete) - faculty submit,
+  // HoD approves (Change of Grade also needs the VPAA), Registration Manager
+  // confirms the SIS entry.
+  faculty_submission: 'academic',
+  hod_approval: 'academic',
+  vpaa_approval: 'academic',
+  registration_entry: 'registration',
 };
 
 const STEP_SLA_DAYS: Record<string, number> = {
@@ -813,6 +824,10 @@ const STEP_SLA_DAYS: Record<string, number> = {
   advisor: 5,
   puc: 7,
   it: 2,
+  faculty_submission: 0,
+  hod_approval: 3,
+  vpaa_approval: 3,
+  registration_entry: 2,
   completed: 1,
 };
 
@@ -864,6 +879,8 @@ export function getRequestStageInfo(req: StudentRequest, now: Date = new Date())
   };
 }
 
+export type RejectReasonCode = 'late_submission' | 'invalid_document' | 'other';
+
 export interface StudentRequest {
   id: string;
   type: RequestType;
@@ -874,19 +891,176 @@ export interface StudentRequest {
   submitted_at: string;
   assigned_to_en: string | null;
   assigned_to_ar: string | null;
+  /** Truthy when the assignment came from the workflow's auto-routing, not a
+   *  manual override - surfaces an "auto-assigned" hint in the sidebar. */
+  auto_assigned?: boolean;
   payment_status: 'paid' | 'pending' | 'not_required';
   workflow: RequestWorkflowStep[];
   attachments: RequestAttachment[];
   comments: RequestComment[];
-  /** Study week the withdrawal was filed in — drives the financial fine
+  /** Outstanding finance balance (KWD) blocking online payment for this request
+   *  per the feedback: online payments only after outstanding balance cleared. */
+  outstanding_balance_kwd?: number;
+  /** Semester key the request belongs to (Spring 2026 etc.). Lets the
+   *  dashboard slice queues semester-by-semester. */
+  semester?: string;
+  /** Study week the withdrawal was filed in - drives the financial fine
    *  (CCK Registration & fees policy). Only set on withdrawal requests. */
   withdrawal_study_week?: number;
   /** Term tuition the withdrawal fine percentage is applied to (KWD). */
   withdrawal_tuition_kwd?: number;
-  /** Reason captured when a request is rejected — sent to the student by
+  /** Reason captured when a request is rejected - sent to the student by
    *  email (CCK Hub Update.pdf: rejection must email the reason). */
   rejection_reason?: string;
+  /** Structured rejection reason (Late submission / Invalid document / Other). */
+  rejection_reason_code?: RejectReasonCode;
+  /** Faculty-submitted Change of Grade form (Change of Grade Form CCK). */
+  change_of_grade_details?: ChangeOfGradeDetails;
+  /** Faculty-submitted Incomplete "I" grade form (Final Grade of Incomplete CCK). */
+  incomplete_grade_details?: IncompleteGradeDetails;
 }
+
+/** Justification options on the Change of Grade form. */
+export type GradeChangeJustification =
+  | 'data_entry_error'
+  | 'computational_error'
+  | 'incomplete_completed'
+  | 'other';
+
+/** Fields captured from the "Change of Grade Form CCK" document. */
+export interface ChangeOfGradeDetails {
+  student_name: string;
+  cck_id: string;
+  department: string;
+  major: string;
+  semester: 'fall' | 'spring' | 'summer';
+  year: string;
+  course_code: string;
+  section: string;
+  course_title: string;
+  original_grade: string;
+  new_grade: string;
+  justification: GradeChangeJustification;
+  justification_other?: string;
+  instructor_name: string;
+}
+
+export type IncompleteAssignment = 'final_exam' | 'project' | 'midterm' | 'other';
+
+/** Part 2 of the Incomplete form: the instructor either approves the "I"
+ *  (student has a passing grade in the completed work) or denies it and
+ *  assigns a grade based on the work completed. */
+export type IncompleteInstructorDecision = 'approved' | 'denied';
+
+/** Fields captured from the "Final Grade of Incomplete CCK" document. */
+export interface IncompleteGradeDetails {
+  student_name: string;
+  cck_id: string;
+  program: 'diploma' | 'bachelor';
+  major: string;
+  telephone: string;
+  semester: 'fall' | 'spring' | 'summer';
+  year: string;
+  course_code: string;
+  section: string;
+  course_title: string;
+  instructor_name: string;
+  justification: string;
+  instructor_decision: IncompleteInstructorDecision;
+  /** Grade assigned from completed work when the instructor denies the "I". */
+  denied_grade_assigned?: string;
+  required_assignments: IncompleteAssignment[];
+  completion_deadline: string;
+}
+
+/** Student contact details surfaced on the request detail page so staff can
+ *  reach out directly without leaving the workflow (feedback: contact numbers
+ *  and address must be visible on the request page). */
+export interface StudentContact {
+  phone?: string;
+  emergency_phone?: string;
+  email?: string;
+  address_en?: string;
+  address_ar?: string;
+}
+
+const STUDENT_CONTACTS: Record<string, StudentContact> = {
+  '20211045': { phone: '+965 9000 1045', emergency_phone: '+965 9111 1045',
+    email: 'yousef.almutairi@cck.edu.kw',
+    address_en: 'Salmiya, Block 10, Street 5, House 22',
+    address_ar: 'السالمية، قطعة 10، شارع 5، منزل 22' },
+  '20221180': { phone: '+965 9000 1180', emergency_phone: '+965 9111 1180',
+    email: 'mariam.alajmi@cck.edu.kw',
+    address_en: 'Hawally, Block 3, Street 12, House 8',
+    address_ar: 'حولي، قطعة 3، شارع 12، منزل 8' },
+  '20201990': { phone: '+965 9000 1990', emergency_phone: '+965 9111 1990',
+    email: 'khalid.alrashidi@cck.edu.kw',
+    address_en: 'Jahra, Block 1, Street 4, House 17',
+    address_ar: 'الجهراء، قطعة 1، شارع 4، منزل 17' },
+  '20231022': { phone: '+965 9000 1022', emergency_phone: '+965 9111 1022',
+    email: 'lina.alotaibi@cck.edu.kw',
+    address_en: 'Mishref, Block 6, Street 9, House 30',
+    address_ar: 'مشرف، قطعة 6، شارع 9، منزل 30' },
+  '20191130': { phone: '+965 9000 1130', emergency_phone: '+965 9111 1130',
+    email: 'fatima.alsabah@cck.edu.kw',
+    address_en: 'Dasma, Block 2, Street 7, House 11',
+    address_ar: 'الدسمة، قطعة 2، شارع 7، منزل 11' },
+  '20191205': { phone: '+965 9000 1205', emergency_phone: '+965 9111 1205',
+    email: 'abdullah.alfailakawi@cck.edu.kw',
+    address_en: 'Salwa, Block 8, Street 3, House 5',
+    address_ar: 'سلوى، قطعة 8، شارع 3، منزل 5' },
+  '20251002': { phone: '+965 9000 1002', emergency_phone: '+965 9111 1002',
+    email: 'saad.alhajri@cck.edu.kw',
+    address_en: 'Bayan, Block 5, Street 11, House 19',
+    address_ar: 'بيان، قطعة 5، شارع 11، منزل 19' },
+  '20241002': { phone: '+965 9000 2002', emergency_phone: '+965 9111 2002',
+    email: 'reem.alfailakawi@cck.edu.kw',
+    address_en: 'Adailiya, Block 4, Street 6, House 14',
+    address_ar: 'العديلية، قطعة 4، شارع 6، منزل 14' },
+};
+
+/** Semester registry powers the dashboard semester selector. The "active"
+ *  semester is the one currently open for new requests; closed semesters are
+ *  read-only - a semester cannot be closed while pending requests remain
+ *  (feedback: close all pending requests before closing the semester). */
+export type SemesterStatus = 'active' | 'closed';
+export interface SemesterRecord {
+  key: string;
+  label_en: string;
+  label_ar: string;
+  status: SemesterStatus;
+  /** ISO date the semester ends (used for ordering in the selector). */
+  ended_at: string;
+}
+
+const SEMESTERS: SemesterRecord[] = [
+  { key: 'spring-2026', label_en: 'Spring 2026', label_ar: 'ربيع 2026',
+    status: 'active', ended_at: '2026-06-30T00:00:00Z' },
+  { key: 'fall-2025', label_en: 'Fall 2025', label_ar: 'خريف 2025',
+    status: 'closed', ended_at: '2026-01-15T00:00:00Z' },
+  { key: 'summer-2025', label_en: 'Summer 2025', label_ar: 'صيف 2025',
+    status: 'closed', ended_at: '2025-08-20T00:00:00Z' },
+];
+
+/** Bank-detail-change window - only accepting submissions inside the dates
+ *  the college publishes (feedback: bank changes must be window-gated). */
+export interface BankChangeWindow {
+  opens_at: string;
+  closes_at: string;
+  next_opens_at: string;
+  is_open: boolean;
+  label_en: string;
+  label_ar: string;
+}
+
+const BANK_CHANGE_WINDOW: BankChangeWindow = {
+  opens_at: '2026-05-15T00:00:00Z',
+  closes_at: '2026-06-10T00:00:00Z',
+  next_opens_at: '2026-09-15T00:00:00Z',
+  is_open: true,
+  label_en: '15 May - 10 Jun 2026',
+  label_ar: '15 مايو - 10 يونيو 2026',
+};
 
 const wfTwimc = (step: 0 | 1 | 2 | 3, submittedAt: string): RequestWorkflowStep[] => hydrateWorkflow([
   { key: 'submitted', label_en: 'Submitted by student', label_ar: 'قدّمها الطالب',
@@ -921,7 +1095,7 @@ const wfAbsence = (step: 0 | 1 | 2, submittedAt: string): RequestWorkflowStep[] 
     status: step >= 2 ? 'completed' : step === 1 ? 'current' : 'pending' },
 ], submittedAt);
 
-// PUC tuition-aid letters carry no payment — the flow is select letter →
+// PUC tuition-aid letters carry no payment - the flow is select letter →
 // upload Civil ID → Registration drafts → received from PUC (CCK Hub Update.pdf).
 const wfPucLetter = (step: 0 | 1 | 2 | 3, submittedAt: string): RequestWorkflowStep[] => hydrateWorkflow([
   { key: 'submitted', label_en: 'PUC letter requested + Civil ID uploaded', label_ar: 'طلب خطاب PUC ورفع البطاقة المدنية',
@@ -934,13 +1108,44 @@ const wfPucLetter = (step: 0 | 1 | 2 | 3, submittedAt: string): RequestWorkflowS
     status: step >= 3 ? 'completed' : step === 2 ? 'current' : 'pending' },
 ], submittedAt);
 
-// Update Student ID photo — IT applies white background, then re-issues card.
-const wfIdPhoto = (step: 0 | 1 | 2, submittedAt: string): RequestWorkflowStep[] => hydrateWorkflow([
+// Update Student ID photo - Registration approves the new photo, IT prints
+// the card and hands it back to Registration for student pickup.
+const wfIdPhoto = (step: 0 | 1 | 2 | 3 | 4, submittedAt: string): RequestWorkflowStep[] => hydrateWorkflow([
   { key: 'submitted', label_en: 'New photo submitted', label_ar: 'تقديم الصورة الجديدة',
     status: step >= 0 ? 'completed' : 'pending' },
-  { key: 'it', label_en: 'IT reviews photo (white background applied)', label_ar: 'مراجعة IT للصورة (تطبيق خلفية بيضاء)',
+  { key: 'registration_approve', label_en: 'Registration approves photo', label_ar: 'موافقة التسجيل على الصورة',
     status: step >= 1 ? 'completed' : step === 0 ? 'current' : 'pending' },
-  { key: 'registration', label_en: 'Updated ID ready for pickup', label_ar: 'البطاقة المحدّثة جاهزة للاستلام',
+  { key: 'it_print', label_en: 'IT prints updated ID', label_ar: 'IT يطبع البطاقة المحدّثة',
+    status: step >= 2 ? 'completed' : step === 1 ? 'current' : 'pending' },
+  { key: 'it_to_registration', label_en: 'IT sends ID to Registration', label_ar: 'IT يسلّم البطاقة للتسجيل',
+    status: step >= 3 ? 'completed' : step === 2 ? 'current' : 'pending' },
+  { key: 'handover', label_en: 'Registration hands ID to student', label_ar: 'التسجيل يسلّم البطاقة للطالب',
+    status: step >= 4 ? 'completed' : step === 3 ? 'current' : 'pending' },
+], submittedAt);
+
+// Change of Grade - faculty submit, Head of Department approves, the V.P. for
+// Academic Affairs approves (the paper form is addressed to the VPAA Office
+// and carries an Instructor + HoD + VPAA signature chain), then the
+// Registration Manager updates the grade in SIS and confirms the entry.
+const wfGradeChange = (step: 0 | 1 | 2 | 3, submittedAt: string): RequestWorkflowStep[] => hydrateWorkflow([
+  { key: 'faculty_submission', label_en: 'Submitted by faculty', label_ar: 'مقدّم من عضو هيئة التدريس',
+    status: step >= 0 ? 'completed' : 'pending' },
+  { key: 'hod_approval', label_en: 'Head of Department approval', label_ar: 'موافقة رئيس القسم',
+    status: step >= 1 ? 'completed' : step === 0 ? 'current' : 'pending' },
+  { key: 'vpaa_approval', label_en: 'V.P. for Academic Affairs approval', label_ar: 'موافقة نائب الرئيس للشؤون الأكاديمية',
+    status: step >= 2 ? 'completed' : step === 1 ? 'current' : 'pending' },
+  { key: 'registration_entry', label_en: 'Registration Manager updates grade in SIS', label_ar: 'مدير التسجيل يحدّث الدرجة في النظام',
+    status: step >= 3 ? 'completed' : step === 2 ? 'current' : 'pending' },
+], submittedAt);
+
+// Incomplete "I" - the paper form only carries Instructor + HoD signatures,
+// so the chain stays faculty → HoD → Registration (CCK Hub Update 17-06-26).
+const wfIncomplete = (step: 0 | 1 | 2, submittedAt: string): RequestWorkflowStep[] => hydrateWorkflow([
+  { key: 'faculty_submission', label_en: 'Submitted by faculty', label_ar: 'مقدّم من عضو هيئة التدريس',
+    status: step >= 0 ? 'completed' : 'pending' },
+  { key: 'hod_approval', label_en: 'Head of Department approval', label_ar: 'موافقة رئيس القسم',
+    status: step >= 1 ? 'completed' : step === 0 ? 'current' : 'pending' },
+  { key: 'registration_entry', label_en: 'Registration Manager updates grade in SIS', label_ar: 'مدير التسجيل يحدّث الدرجة في النظام',
     status: step >= 2 ? 'completed' : step === 1 ? 'current' : 'pending' },
 ], submittedAt);
 
@@ -964,8 +1169,25 @@ const STUDENT_REQUESTS: StudentRequest[] = [
     id: 'REQ-2026-0432', type: 'transcript',
     student_id: '20221180', student_name_en: 'Mariam Al-Ajmi', student_name_ar: 'مريم العجمي',
     status: 'submitted', submitted_at: '2026-04-25T11:02:00Z',
-    assigned_to_en: null, assigned_to_ar: null, payment_status: 'paid',
+    assigned_to_en: 'Noura Al-Shahri', assigned_to_ar: 'نورة الشهري',
+    auto_assigned: true,
+    payment_status: 'pending',
+    outstanding_balance_kwd: 320,
     workflow: wfTwimc(1, '2026-04-25T11:02:00Z'),
+    attachments: [],
+    comments: [],
+  },
+  // Seeded so the TWIMC finance-hold path is visible in the queue alongside
+  // the Transcript one (CCK Hub Feedback v3 - both types are blocked).
+  {
+    id: 'REQ-2026-0432A', type: 'twimc',
+    student_id: '20230077', student_name_en: 'Dana Al-Otaibi', student_name_ar: 'دانة العتيبي',
+    status: 'submitted', submitted_at: '2026-04-25T13:40:00Z',
+    assigned_to_en: 'Noura Al-Shahri', assigned_to_ar: 'نورة الشهري',
+    auto_assigned: true,
+    payment_status: 'pending',
+    outstanding_balance_kwd: 487.5,
+    workflow: wfTwimc(1, '2026-04-25T13:40:00Z'),
     attachments: [],
     comments: [],
   },
@@ -1049,14 +1271,37 @@ const STUDENT_REQUESTS: StudentRequest[] = [
     id: 'REQ-2026-0439', type: 'lost_id',
     student_id: '20221180', student_name_en: 'Mariam Al-Ajmi', student_name_ar: 'مريم العجمي',
     status: 'in_progress', submitted_at: '2026-04-24T15:30:00Z',
-    assigned_to_en: 'IT Helpdesk', assigned_to_ar: 'مكتب الدعم التقني', payment_status: 'paid',
+    assigned_to_en: 'IT Helpdesk', assigned_to_ar: 'مكتب الدعم التقني',
+    auto_assigned: true,
+    payment_status: 'paid',
+    // Updated per feedback: payment > Registration identity verify > IT issuance > Registration collection
     workflow: hydrateWorkflow([
       { key: 'submitted', label_en: 'Lost ID request submitted', label_ar: 'تقديم طلب فقدان البطاقة', status: 'completed' },
-      { key: 'finance', label_en: 'Finance - replacement fee', label_ar: 'المالية - رسوم البدل', status: 'completed' },
-      { key: 'it', label_en: 'IT prints new card', label_ar: 'IT يطبع البطاقة الجديدة', status: 'current' },
-      { key: 'registration', label_en: 'Pickup at Registration', label_ar: 'الاستلام من التسجيل', status: 'pending' },
+      { key: 'paid', label_en: 'Replacement fee paid', label_ar: 'دفع رسوم البدل', status: 'completed' },
+      { key: 'review', label_en: 'Registration verifies identity from student file', label_ar: 'التسجيل يتحقق من الهوية من ملف الطالب', status: 'completed' },
+      { key: 'it', label_en: 'IT issues new card', label_ar: 'الدعم التقني يُصدر البطاقة الجديدة', status: 'current' },
+      { key: 'registration', label_en: 'Pickup at Registration (student auto-emailed)', label_ar: 'الاستلام من التسجيل (يُرسل بريد تلقائي للطالب)', status: 'pending' },
     ], '2026-04-24T15:30:00Z'),
     attachments: [],
+    comments: [],
+  },
+  {
+    id: 'REQ-2026-0443', type: 'bank_change',
+    student_id: '20191130', student_name_en: 'Fatima Al-Sabah', student_name_ar: 'فاطمة الصباح',
+    status: 'submitted', submitted_at: '2026-05-16T08:00:00Z',
+    assigned_to_en: 'Mishaal Al-Adwani', assigned_to_ar: 'مشعل العدواني',
+    auto_assigned: true,
+    payment_status: 'not_required',
+    workflow: hydrateWorkflow([
+      { key: 'submitted', label_en: 'Bank change form submitted (within window)', label_ar: 'تقديم نموذج تغيير البنك (داخل النافذة)', status: 'completed' },
+      { key: 'review', label_en: 'Registration verifies form + Civil ID', label_ar: 'التسجيل يتحقق من النموذج والبطاقة', status: 'current' },
+      { key: 'finance', label_en: 'Finance updates bank record', label_ar: 'المالية تُحدّث بيانات البنك', status: 'pending' },
+      { key: 'completed', label_en: 'Confirmation sent to student', label_ar: 'إرسال التأكيد إلى الطالب', status: 'pending' },
+    ], '2026-05-16T08:00:00Z'),
+    attachments: [
+      { id: 'att12', name: 'civil_id.pdf', size_kb: 410, uploaded_by_en: 'Fatima Al-Sabah', uploaded_by_ar: 'فاطمة الصباح', uploaded_at: '2026-05-16T08:00:00Z' },
+      { id: 'att13', name: 'bank_change_form.pdf', size_kb: 320, uploaded_by_en: 'Fatima Al-Sabah', uploaded_by_ar: 'فاطمة الصباح', uploaded_at: '2026-05-16T08:00:00Z' },
+    ],
     comments: [],
   },
   {
@@ -1064,7 +1309,7 @@ const STUDENT_REQUESTS: StudentRequest[] = [
     student_id: '20231022', student_name_en: 'Lina Al-Otaibi', student_name_ar: 'لينا العتيبي',
     status: 'in_progress', submitted_at: '2026-04-25T10:05:00Z',
     assigned_to_en: 'IT Helpdesk', assigned_to_ar: 'مكتب الدعم التقني', payment_status: 'not_required',
-    workflow: wfIdPhoto(1, '2026-04-25T10:05:00Z'),
+    workflow: wfIdPhoto(2, '2026-04-25T10:05:00Z'),
     attachments: [
       { id: 'att9', name: 'new_photo.jpg', size_kb: 318, uploaded_by_en: 'Lina Al-Otaibi', uploaded_by_ar: 'لينا العتيبي', uploaded_at: '2026-04-25T10:05:00Z' },
     ],
@@ -1087,13 +1332,121 @@ const STUDENT_REQUESTS: StudentRequest[] = [
     status: 'rejected', submitted_at: '2026-04-12T08:30:00Z',
     assigned_to_en: 'Noura Al-Shahri', assigned_to_ar: 'نورة الشهري', payment_status: 'not_required',
     workflow: wfAbsence(1, '2026-04-12T08:30:00Z'),
-    rejection_reason: 'Medical report submitted 6 days after the absence — outside the 5-day window required by the CCK Attendance Policy.',
+    rejection_reason: 'Medical report submitted 6 days after the absence - outside the 5-day window required by the CCK Attendance Policy.',
     attachments: [
       { id: 'att11', name: 'medical_note.pdf', size_kb: 288, uploaded_by_en: 'Saad Al-Hajri', uploaded_by_ar: 'سعد الهاجري', uploaded_at: '2026-04-12T08:30:00Z' },
     ],
     comments: [],
   },
+  // Academic requests submitted by faculty (CCK Hub Update 17-06-26).
+  {
+    id: 'REQ-2026-0451', type: 'change_of_grade',
+    student_id: '20211045', student_name_en: 'Yousef Al-Mutairi', student_name_ar: 'يوسف المطيري',
+    status: 'in_progress', submitted_at: '2026-04-26T09:00:00Z',
+    assigned_to_en: 'Dr. Hassan Al-Sayed (HoD)', assigned_to_ar: 'د. حسن السيد (رئيس القسم)',
+    auto_assigned: true, payment_status: 'not_required',
+    workflow: wfGradeChange(1, '2026-04-26T09:00:00Z'),
+    change_of_grade_details: {
+      student_name: 'Yousef Al-Mutairi', cck_id: '20211045',
+      department: 'Business', major: 'Accounting',
+      semester: 'spring', year: '26',
+      course_code: 'ACC 210', section: '01', course_title: 'Financial Accounting',
+      original_grade: 'C', new_grade: 'B',
+      justification: 'computational_error', instructor_name: 'Dr. Hassan Al-Sayed',
+    },
+    attachments: [],
+    comments: [
+      { id: 'cg1', author_en: 'Dr. Hassan Al-Sayed', author_ar: 'د. حسن السيد',
+        body: 'Final exam total was added incorrectly; corrected score raises the grade.', created_at: '2026-04-26T09:00:00Z', internal: true },
+    ],
+  },
+  {
+    id: 'REQ-2026-0452', type: 'incomplete_grade',
+    student_id: '20221180', student_name_en: 'Mariam Al-Ajmi', student_name_ar: 'مريم العجمي',
+    status: 'submitted', submitted_at: '2026-04-27T10:30:00Z',
+    assigned_to_en: 'Dr. Layla Al-Rashid (HoD)', assigned_to_ar: 'د. ليلى الرشيد (رئيس القسم)',
+    auto_assigned: true, payment_status: 'not_required',
+    workflow: wfIncomplete(0, '2026-04-27T10:30:00Z'),
+    incomplete_grade_details: {
+      student_name: 'Mariam Al-Ajmi', cck_id: '20221180',
+      program: 'diploma', major: 'Computer Programming', telephone: '+965 9000 1180',
+      semester: 'spring', year: '26',
+      course_code: 'CP 230', section: '02', course_title: 'Data Structures',
+      instructor_name: 'Dr. Layla Al-Rashid',
+      justification: 'Student hospitalised during the final exam week (medical report attached).',
+      instructor_decision: 'approved',
+      required_assignments: ['final_exam', 'project'],
+      completion_deadline: '2026-09-15',
+    },
+    attachments: [
+      { id: 'att12', name: 'medical_report.pdf', size_kb: 332, uploaded_by_en: 'Dr. Layla Al-Rashid', uploaded_by_ar: 'د. ليلى الرشيد', uploaded_at: '2026-04-27T10:30:00Z' },
+    ],
+    comments: [],
+  },
+  // Denied Incomplete - the instructor assigned a grade from completed work
+  // (Part 2 of the Final Grade of Incomplete form). The form is still routed
+  // through HoD and filed with Registration.
+  {
+    id: 'REQ-2026-0453', type: 'incomplete_grade',
+    student_id: '20251002', student_name_en: 'Saad Al-Hajri', student_name_ar: 'سعد الهاجري',
+    status: 'in_progress', submitted_at: '2026-05-02T12:00:00Z',
+    assigned_to_en: 'Dr. Hassan Al-Sayed (HoD)', assigned_to_ar: 'د. حسن السيد (رئيس القسم)',
+    auto_assigned: true, payment_status: 'not_required',
+    workflow: wfIncomplete(1, '2026-05-02T12:00:00Z'),
+    incomplete_grade_details: {
+      student_name: 'Saad Al-Hajri', cck_id: '20251002',
+      program: 'bachelor', major: 'Marketing', telephone: '+965 9000 1002',
+      semester: 'spring', year: '26',
+      course_code: 'MKTG 310', section: '01', course_title: 'Consumer Behaviour',
+      instructor_name: 'Dr. Hassan Al-Sayed',
+      justification: 'Student requested an Incomplete citing travel during the final exam.',
+      instructor_decision: 'denied',
+      denied_grade_assigned: 'D',
+      required_assignments: [],
+      completion_deadline: '',
+    },
+    attachments: [],
+    comments: [
+      { id: 'ig2', author_en: 'Dr. Hassan Al-Sayed', author_ar: 'د. حسن السيد',
+        body: 'Travel was not a condition beyond the student\'s control; grade assigned from completed work.', created_at: '2026-05-02T12:00:00Z', internal: true },
+    ],
+  },
+  // Late error-correction Change of Grade - filed after the first week of the
+  // following full semester, so the detail page flags it per the form rules.
+  {
+    id: 'REQ-2026-0454', type: 'change_of_grade',
+    student_id: '20201990', student_name_en: 'Khalid Al-Rashidi', student_name_ar: 'خالد الرشيدي',
+    status: 'in_progress', submitted_at: '2026-02-10T09:30:00Z',
+    assigned_to_en: 'Dr. Layla Al-Rashid (HoD)', assigned_to_ar: 'د. ليلى الرشيد (رئيس القسم)',
+    auto_assigned: true, payment_status: 'not_required',
+    workflow: wfGradeChange(1, '2026-02-10T09:30:00Z'),
+    change_of_grade_details: {
+      student_name: 'Khalid Al-Rashidi', cck_id: '20201990',
+      department: 'Engineering', major: 'Biomedical Engineering',
+      semester: 'fall', year: '25',
+      course_code: 'BME 220', section: '02', course_title: 'Biomechanics',
+      original_grade: 'C+', new_grade: 'B-',
+      justification: 'data_entry_error', instructor_name: 'Dr. Layla Al-Rashid',
+    },
+    attachments: [],
+    comments: [],
+  },
 ];
+
+/** Which acceptance-letter body to print - mirrors the three variants in the
+ *  "Offer Letters" template (placement-test Foundation entry, direct entry to a
+ *  Diploma year, or the 2+2 Bachelor track). */
+export type AcceptanceLetterVariant = 'foundation' | 'direct_entry' | 'two_plus_two';
+
+/** The admission deposit that unlocks the acceptance letter (CCK Hub Update
+ *  17-06-26): self-funded pay a 150 KWD seat reservation, PUC-sponsored pay a
+ *  10 KWD application fee. */
+export interface AdmissionPayment {
+  kind: 'seat_reservation' | 'application_fee';
+  amount_kwd: number;
+  paid: boolean;
+  paid_at?: string;
+}
 
 export interface AdmissionApplicant {
   id: string;
@@ -1107,16 +1460,35 @@ export interface AdmissionApplicant {
   stage: 'admission' | 'academic' | 'admission_approval' | 'registration' | 'completed';
   documents: { key: string; status: 'uploaded' | 'missing' | 'flagged' }[];
   submitted_at: string;
+  /** Civil ID number printed on the acceptance letter (Offer Letters template). */
+  civil_id?: string;
+  /** Seat-reservation / application-fee gate on the acceptance letter. */
+  admission_payment: AdmissionPayment;
+  /** Acceptance-letter body variant + the program text it should reference. */
+  letter_variant: AcceptanceLetterVariant;
+  program_label: string;
   acceptance_letter_generated: boolean;
   /** SIS Student ID issued by Registration at the final enrolment step
    *  (Admission-Registration Workflow doc). */
   sis_student_id?: string;
 }
 
-/** Institutions a Transfer-Credit (TC) applicant can transfer from — an
+/** Builds the admission-payment gate for an applicant from their funding
+ *  category (CCK Hub Update 17-06-26 fee rules). */
+function admissionPaymentFor(
+  category: AdmissionApplicant['category'],
+  paid: boolean,
+  paid_at?: string,
+): AdmissionPayment {
+  const kind = category === 'puc_sponsored' ? 'application_fee' : 'seat_reservation';
+  const amount_kwd = kind === 'application_fee' ? MISC_FEES_KWD.application : SEAT_RESERVATION_FEE_KWD;
+  return { kind, amount_kwd, paid, ...(paid && paid_at ? { paid_at } : {}) };
+}
+
+/** Institutions a Transfer-Credit (TC) applicant can transfer from - an
  *  enumerated dropdown source per the Admission-Registration Workflow doc. */
 export const TRANSFER_INSTITUTIONS: { value: string; label_en: string; label_ar: string }[] = [
-  { value: 'paaet', label_en: 'PAAET — Public Authority for Applied Education & Training', label_ar: 'الهيئة العامة للتعليم التطبيقي والتدريب' },
+  { value: 'paaet', label_en: 'PAAET - Public Authority for Applied Education & Training', label_ar: 'الهيئة العامة للتعليم التطبيقي والتدريب' },
   { value: 'ku', label_en: 'Kuwait University', label_ar: 'جامعة الكويت' },
   { value: 'gust', label_en: 'Gulf University for Science & Technology', label_ar: 'جامعة الخليج للعلوم والتكنولوجيا' },
   { value: 'auk', label_en: 'American University of Kuwait', label_ar: 'الجامعة الأمريكية في الكويت' },
@@ -1125,8 +1497,10 @@ export const TRANSFER_INSTITUTIONS: { value: string; label_en: string; label_ar:
   { value: 'other', label_en: 'Other institution', label_ar: 'مؤسسة أخرى' },
 ];
 
+// Order is the order shown in the admissions UI. "photo" sits with the other
+// documents per the feedback - it was previously omitted from the docs list.
 const ADMISSION_DOC_KEYS = [
-  'civil_id', 'passport', 'equivalency', 'high_school',
+  'photo', 'civil_id', 'passport', 'equivalency', 'high_school',
   'father_civil_id', 'declaration', 'payment_proof',
   'puc_declaration', 'placement_test',
 ];
@@ -1143,6 +1517,10 @@ const ADMISSION_APPLICANTS: AdmissionApplicant[] = [
       status: k === 'puc_declaration' ? 'missing' : k === 'placement_test' ? 'flagged' : 'uploaded',
     })),
     submitted_at: '2026-04-15T09:00:00Z',
+    civil_id: '305062100412',
+    admission_payment: admissionPaymentFor('self_funded', false),
+    letter_variant: 'direct_entry',
+    program_label: 'Diploma of Business - Accounting',
     acceptance_letter_generated: false,
   },
   {
@@ -1156,6 +1534,10 @@ const ADMISSION_APPLICANTS: AdmissionApplicant[] = [
       status: k === 'payment_proof' ? 'missing' : 'uploaded',
     })),
     submitted_at: '2026-04-22T11:30:00Z',
+    civil_id: '306071900233',
+    admission_payment: admissionPaymentFor('puc_sponsored', false),
+    letter_variant: 'direct_entry',
+    program_label: 'Diploma of Computer Programming',
     acceptance_letter_generated: false,
   },
   {
@@ -1166,6 +1548,10 @@ const ADMISSION_APPLICANTS: AdmissionApplicant[] = [
     stage: 'academic',
     documents: ADMISSION_DOC_KEYS.map((k) => ({ key: k, status: 'uploaded' })),
     submitted_at: '2026-04-08T14:00:00Z',
+    civil_id: '304051700981',
+    admission_payment: admissionPaymentFor('tc', true, '2026-04-12T10:00:00Z'),
+    letter_variant: 'two_plus_two',
+    program_label: 'Bachelor of Computer Science as part of the 2 + 2 program of study',
     acceptance_letter_generated: false,
   },
   {
@@ -1176,6 +1562,10 @@ const ADMISSION_APPLICANTS: AdmissionApplicant[] = [
     stage: 'completed',
     documents: ADMISSION_DOC_KEYS.map((k) => ({ key: k, status: 'uploaded' })),
     submitted_at: '2026-03-28T10:00:00Z',
+    civil_id: '307081200559',
+    admission_payment: admissionPaymentFor('self_funded', true, '2026-03-30T09:00:00Z'),
+    letter_variant: 'foundation',
+    program_label: 'Diploma of Business - Management & Entrepreneurship',
     acceptance_letter_generated: true,
     sis_student_id: '20260104',
   },
@@ -1187,11 +1577,36 @@ const ADMISSION_APPLICANTS: AdmissionApplicant[] = [
     stage: 'registration',
     documents: ADMISSION_DOC_KEYS.map((k) => ({ key: k, status: 'uploaded' })),
     submitted_at: '2026-04-02T08:30:00Z',
+    civil_id: '305031600147',
+    admission_payment: admissionPaymentFor('puc_sponsored', true, '2026-04-04T08:30:00Z'),
+    letter_variant: 'direct_entry',
+    program_label: 'Diploma of Internet Applications & Web Development',
     acceptance_letter_generated: true,
   },
 ];
 
 export type SocialCategory = 'kuwaiti' | 'kuwaiti_mother' | 'disabled' | 'married' | 'bank_change';
+export type SocialDocRejectReason = 'not_clear' | 'expired' | 'irrelevant';
+
+/** Where the student can obtain each document - surfaced as a small hint on
+ *  the SA card per the feedback so students get instructions in-app. */
+export const SOCIAL_DOC_SOURCE: Record<string, 'sahel' | 'kuwaitMobileId' | 'cckOffice' | 'bank'> = {
+  civil_id: 'kuwaitMobileId',
+  security: 'sahel',
+  social_affairs: 'sahel',
+  salary_transfer: 'bank',
+  manpower: 'sahel',
+  mother_nationality: 'sahel',
+  mother_civil_id: 'kuwaitMobileId',
+  birth_cert: 'sahel',
+  twimc_mother: 'sahel',
+  disability_proof: 'sahel',
+  marriage_cert: 'sahel',
+  marriage_continuity: 'sahel',
+  wife_civil_id: 'kuwaitMobileId',
+  bank_form: 'cckOffice',
+};
+
 export interface SocialApplication {
   id: string;
   application_no: string;
@@ -1201,8 +1616,9 @@ export interface SocialApplication {
   category: SocialCategory;
   status: 'pending' | 'in_progress' | 'rejected' | 'completed';
   submitted_at: string;
-  documents: { key: string; quality: 'ok' | 'issue' }[];
+  documents: { key: string; quality: 'ok' | 'issue'; reject_reason?: SocialDocRejectReason }[];
   sent_to_puc: boolean;
+  rejection_reason?: string;
 }
 
 const SOCIAL_DOCS: Record<SocialCategory, string[]> = {
@@ -1261,6 +1677,39 @@ const SOCIAL_APPLICATIONS: SocialApplication[] = [
   },
 ];
 
+/** Appeal lifecycle (CCK Hub Update 17-06-26): student submits → routed to the
+ *  course instructor for a marks review → Appeal Committee decision → outcome
+ *  emailed to faculty, student and student advising. */
+export type AppealStage = 'submitted' | 'faculty_review' | 'committee' | 'decided';
+export type AppealDecision = 'approved' | 'rejected' | 'pending';
+
+/** A single graded item (quiz, assignment, exam) in the marks breakdown. */
+export interface AppealMarkItem {
+  id: string;
+  /** Item name, e.g. "Quiz 1", "Assignment 2", "Final". */
+  label: string;
+  /** Mark the student earned on this item, as a percentage (0-100). */
+  score: number;
+  /** Weight this item carries toward the final grade, as a percentage (0-100). */
+  weight: number;
+}
+
+/** Marks breakdown pulled from the LMS for the faculty review step. */
+export interface AppealMarksBreakdown {
+  items: AppealMarkItem[];
+}
+
+/** CCK letter-grade scale, highest to lowest. */
+export const APPEAL_GRADE_SCALE = [
+  'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F',
+] as const;
+
+export interface AppealOutcomeEmail {
+  sent: boolean;
+  sent_at?: string;
+  recipients: string[];
+}
+
 export interface Appeal {
   id: string;
   student_id: string;
@@ -1269,11 +1718,35 @@ export interface Appeal {
   course_code: string;
   course_name: string;
   current_grade: string;
+  /** Captured from SIS at submission alongside the grade (CCK Hub Update). */
+  cgpa: number;
+  stage: AppealStage;
   status: 'submitted' | 'in_progress' | 'completed';
   submitted_at: string;
   faculty_assigned_en: string;
   faculty_assigned_ar: string;
+  faculty_email?: string;
+  student_email?: string;
   form_uploaded: boolean;
+  /** Student's justification entered in the appeal comment box. */
+  student_comment: string;
+  /** LMS marks breakdown surfaced to the instructor for the review. */
+  marks_breakdown?: AppealMarksBreakdown;
+  /** Instructor's feedback after reviewing the marks. */
+  faculty_comment?: string;
+  /** Grade the instructor suggests after analysing all factors (advisory to the committee). */
+  faculty_suggested_grade?: string;
+  committee_decision?: AppealDecision;
+  /** Grade the Appeal Committee settles on alongside its decision. */
+  committee_suggested_grade?: string;
+  /** Committee's rationale recorded with the decision. */
+  committee_comment?: string;
+  decided_at?: string;
+  outcome_email?: AppealOutcomeEmail;
+  /** Change of Grade Form auto-generated + e-signed when the committee approves
+   *  the appeal (Change of Grade Form situation 3: grade change based on the
+   *  student appeal committee decision). */
+  grade_change_form?: { generated: boolean; generated_at: string; new_grade: string };
 }
 
 const APPEALS: Appeal[] = [
@@ -1281,17 +1754,48 @@ const APPEALS: Appeal[] = [
     id: 'APP-2026-001', student_id: '20211045',
     student_name_en: 'Yousef Al-Mutairi', student_name_ar: 'يوسف المطيري',
     course_code: 'BUS 301', course_name: 'Operations Management',
-    current_grade: 'D+', status: 'submitted', submitted_at: '2026-04-25T11:00:00Z',
+    current_grade: 'D+', cgpa: 2.41,
+    stage: 'submitted', status: 'submitted', submitted_at: '2026-04-25T11:00:00Z',
     faculty_assigned_en: 'Dr. Hassan Al-Sayed', faculty_assigned_ar: 'د. حسن السيد',
+    faculty_email: 'h.alsayed@cck.edu.kw', student_email: 'y.almutairi@cck.edu.kw',
     form_uploaded: true,
+    student_comment: 'My final exam mark seems lower than expected. I believe question 4 was not graded.',
   },
   {
     id: 'APP-2026-002', student_id: '20221180',
     student_name_en: 'Mariam Al-Ajmi', student_name_ar: 'مريم العجمي',
     course_code: 'ENG 201', course_name: 'Engineering Mechanics',
-    current_grade: 'C-', status: 'in_progress', submitted_at: '2026-04-24T13:00:00Z',
+    current_grade: 'C-', cgpa: 2.88,
+    stage: 'faculty_review', status: 'in_progress', submitted_at: '2026-04-24T13:00:00Z',
     faculty_assigned_en: 'Dr. Layla Al-Rashid', faculty_assigned_ar: 'د. ليلى الرشيد',
+    faculty_email: 'l.alrashid@cck.edu.kw', student_email: 'm.alajmi@cck.edu.kw',
     form_uploaded: true,
+    student_comment: 'Requesting a recount of my midterm; I think two pages were missed.',
+    marks_breakdown: { items: [
+      { id: 'mk1', label: 'Quiz 1', score: 85, weight: 10 },
+      { id: 'mk2', label: 'Quiz 2', score: 78, weight: 10 },
+      { id: 'mk3', label: 'Midterm', score: 74, weight: 30 },
+      { id: 'mk4', label: 'Final', score: 62, weight: 50 },
+    ] },
+  },
+  {
+    id: 'APP-2026-003', student_id: '20201990',
+    student_name_en: 'Khalid Al-Rashidi', student_name_ar: 'خالد الرشيدي',
+    course_code: 'ACC 210', course_name: 'Financial Accounting',
+    current_grade: 'C', cgpa: 3.05,
+    stage: 'committee', status: 'in_progress', submitted_at: '2026-04-22T09:00:00Z',
+    faculty_assigned_en: 'Dr. Omar Al-Fadhli', faculty_assigned_ar: 'د. عمر الفضلي',
+    faculty_email: 'o.alfadhli@cck.edu.kw', student_email: 'k.alrashidi@cck.edu.kw',
+    form_uploaded: true,
+    student_comment: 'Please review my project grade against the rubric.',
+    marks_breakdown: { items: [
+      { id: 'mk1', label: 'Assignment 1', score: 88, weight: 15 },
+      { id: 'mk2', label: 'Quiz 1', score: 80, weight: 10 },
+      { id: 'mk3', label: 'Midterm', score: 82, weight: 25 },
+      { id: 'mk4', label: 'Final', score: 76, weight: 50 },
+    ] },
+    faculty_comment: 'Re-checked the project; one section was under-credited. Recommend grade review by committee.',
+    faculty_suggested_grade: 'C+',
   },
 ];
 
@@ -1299,7 +1803,7 @@ export interface FaRoster {
   course_code: string;
   course_name: string;
   section: string;
-  /** Credit hours — drives the per-credit attendance thresholds
+  /** Credit hours - drives the per-credit attendance thresholds
    *  (CCK Attendance Policy). */
   credit_hours: number;
   instructor_en: string;
@@ -1311,7 +1815,7 @@ export interface FaRoster {
     name_en: string;
     name_ar: string;
     attendance_pct: number;
-    /** Cumulative absent contact-hours — compared against the policy thresholds. */
+    /** Cumulative absent contact-hours - compared against the policy thresholds. */
     absences: number;
     assessments: { label: string; score: number }[];
     total_grade: number;
@@ -1391,6 +1895,66 @@ const WARNINGS: AcademicWarning[] = [
     gpa: 1.6, warning_semester: 'Spring 2026', notified_at: '2026-04-21T08:00:00Z', signed_at: null },
 ];
 
+/* ─── Advising appointments (Calendar) ───
+ * Student advising meeting slots auto-created from the warning pipeline
+ * (CCK Hub Feedback v3 - "Calander"). Two meeting types exist:
+ *  - gpa_warning: created when a student receives an academic warning.
+ *  - absence_2nd_warning: created when the FA screen records a 2nd absence warning.
+ * Each starts as `proposed` and the advisor accepts (or reschedules) the slot. */
+export type AdvisingMeetingKey = 'gpa_warning' | 'absence_2nd_warning';
+export type AppointmentStatus = 'proposed' | 'accepted' | 'completed' | 'cancelled';
+
+export interface AdvisingAppointment {
+  id: string;
+  type: AdvisingMeetingKey;
+  student_id: string;
+  student_name_en: string;
+  student_name_ar: string;
+  advisor_en: string;
+  advisor_ar: string;
+  /** ISO datetime of the proposed slot. */
+  scheduled_at: string;
+  duration_min: number;
+  location_en: string;
+  location_ar: string;
+  status: AppointmentStatus;
+  /** What auto-triggered the appointment. */
+  source_en: string;
+  source_ar: string;
+  notes?: string;
+}
+
+const ADVISING_APPOINTMENTS: AdvisingAppointment[] = [
+  { id: 'apt1', type: 'gpa_warning', student_id: '20231022', student_name_en: 'Lina Al-Otaibi', student_name_ar: 'لينا العتيبي',
+    advisor_en: 'Dr. Omar Al-Barno', advisor_ar: 'د. عمر البرنو',
+    scheduled_at: '2026-06-08T09:00:00Z', duration_min: 30, location_en: 'Advising Office A · Room 112', location_ar: 'مكتب الإرشاد أ · غرفة ١١٢',
+    status: 'proposed', source_en: 'Academic warning · Spring 2026 · GPA 1.70', source_ar: 'إنذار أكاديمي · ربيع ٢٠٢٦ · المعدل ١٫٧٠' },
+  { id: 'apt2', type: 'absence_2nd_warning', student_id: '20221180', student_name_en: 'Mariam Al-Ajmi', student_name_ar: 'مريم العجمي',
+    advisor_en: 'Dr. Omar Al-Barno', advisor_ar: 'د. عمر البرنو',
+    scheduled_at: '2026-06-08T11:30:00Z', duration_min: 30, location_en: 'Advising Office A · Room 112', location_ar: 'مكتب الإرشاد أ · غرفة ١١٢',
+    status: 'accepted', source_en: '2nd absence warning · ENGL-102', source_ar: 'إنذار الغياب الثاني · ENGL-102' },
+  { id: 'apt3', type: 'gpa_warning', student_id: '20251002', student_name_en: 'Saad Al-Hajri', student_name_ar: 'سعد الهاجري',
+    advisor_en: 'Dr. Omar Al-Barno', advisor_ar: 'د. عمر البرنو',
+    scheduled_at: '2026-06-10T10:00:00Z', duration_min: 30, location_en: 'Advising Office A · Room 112', location_ar: 'مكتب الإرشاد أ · غرفة ١١٢',
+    status: 'proposed', source_en: 'Academic warning · Spring 2026 · GPA 1.60', source_ar: 'إنذار أكاديمي · ربيع ٢٠٢٦ · المعدل ١٫٦٠' },
+  { id: 'apt4', type: 'absence_2nd_warning', student_id: '20211045', student_name_en: 'Yousef Al-Mutairi', student_name_ar: 'يوسف المطيري',
+    advisor_en: 'Dalal Al-Fadhli', advisor_ar: 'دلال الفضلي',
+    scheduled_at: '2026-06-11T13:00:00Z', duration_min: 30, location_en: 'Advising Office B · Room 204', location_ar: 'مكتب الإرشاد ب · غرفة ٢٠٤',
+    status: 'proposed', source_en: '2nd absence warning · MATH-110', source_ar: 'إنذار الغياب الثاني · MATH-110' },
+  { id: 'apt5', type: 'gpa_warning', student_id: '20231022', student_name_en: 'Lina Al-Otaibi', student_name_ar: 'لينا العتيبي',
+    advisor_en: 'Dr. Omar Al-Barno', advisor_ar: 'د. عمر البرنو',
+    scheduled_at: '2026-06-15T09:30:00Z', duration_min: 45, location_en: 'Advising Office A · Room 112', location_ar: 'مكتب الإرشاد أ · غرفة ١١٢',
+    status: 'accepted', source_en: 'Academic warning follow-up', source_ar: 'متابعة الإنذار الأكاديمي' },
+  { id: 'apt6', type: 'absence_2nd_warning', student_id: '20221180', student_name_en: 'Mariam Al-Ajmi', student_name_ar: 'مريم العجمي',
+    advisor_en: 'Dalal Al-Fadhli', advisor_ar: 'دلال الفضلي',
+    scheduled_at: '2026-06-02T10:00:00Z', duration_min: 30, location_en: 'Advising Office B · Room 204', location_ar: 'مكتب الإرشاد ب · غرفة ٢٠٤',
+    status: 'completed', source_en: '2nd absence warning · BUS-201', source_ar: 'إنذار الغياب الثاني · BUS-201' },
+  { id: 'apt7', type: 'gpa_warning', student_id: '20251002', student_name_en: 'Saad Al-Hajri', student_name_ar: 'سعد الهاجري',
+    advisor_en: 'Dr. Omar Al-Barno', advisor_ar: 'د. عمر البرنو',
+    scheduled_at: '2026-06-22T11:00:00Z', duration_min: 30, location_en: 'Advising Office A · Room 112', location_ar: 'مكتب الإرشاد أ · غرفة ١١٢',
+    status: 'proposed', source_en: 'Academic warning · Spring 2026 · GPA 1.60', source_ar: 'إنذار أكاديمي · ربيع ٢٠٢٦ · المعدل ١٫٦٠' },
+];
+
 export type CommitteeStage = 'not_sent' | 'with_committee' | 'decided';
 
 export interface FeedbackEntry {
@@ -1404,7 +1968,7 @@ export interface FeedbackEntry {
   department: string;
   status: 'open' | 'in_progress' | 'resolved';
   submitted_at: string;
-  /** Optional supporting attachment (image / video / PDF) — Student Life doc. */
+  /** Optional supporting attachment (image / video / PDF) - Student Life doc. */
   attachment?: string;
   /** Complaints route through a committee: Student Life → committee feedback
    *  form → decision back to Student Life (Student Life Department doc). */
@@ -1443,7 +2007,7 @@ export interface SportApplication {
   player_type: 'local_club' | 'amateur';
   activity: string;
   proof_doc: string;
-  /** Selecting coach — only set for amateur-player applications. */
+  /** Selecting coach - only set for amateur-player applications. */
   coach_en?: string;
   coach_ar?: string;
   discount_pct: number;
@@ -1467,7 +2031,31 @@ const SPORT_APPLICATIONS: SportApplication[] = [
     discount_pct: 10, status: 'pending', submitted_at: '2026-04-24T09:00:00Z' },
 ];
 
-/* ─── Student Life — events & club joining ─── */
+/* ─── Student Life - events & club joining ─── */
+
+/** A single audience tag an event can be announced to. */
+export type AudienceTag = 'all' | 'freshmen' | 'graduating' | 'specific' | 'staff';
+
+/** When 'staff' is in the audience: reach all staff or only chosen departments. */
+export type StaffScope = 'all' | 'departments';
+
+export interface StaffDepartment {
+  key: string;
+  label_en: string;
+  label_ar: string;
+  /** Approximate headcount used to estimate audience reach. */
+  size: number;
+}
+
+/** Staff departments selectable when announcing an event to staff. */
+export const STAFF_DEPARTMENTS: StaffDepartment[] = [
+  { key: 'registration', label_en: 'Registration', label_ar: 'التسجيل', size: 12 },
+  { key: 'admission', label_en: 'Admission', label_ar: 'القبول', size: 9 },
+  { key: 'finance', label_en: 'Finance', label_ar: 'المالية', size: 11 },
+  { key: 'it', label_en: 'IT', label_ar: 'تقنية المعلومات', size: 8 },
+  { key: 'academic', label_en: 'Academic Staff', label_ar: 'الهيئة الأكاديمية', size: 140 },
+  { key: 'student_life', label_en: 'Student Life', label_ar: 'شؤون الطلبة', size: 10 },
+];
 
 export interface StudentLifeEvent {
   id: string;
@@ -1481,11 +2069,15 @@ export interface StudentLifeEvent {
   description_ar?: string;
   /** Internal CCK activity vs an external/community event. */
   scope: 'internal' | 'external';
-  /** Audience the event is announced to. */
-  audience: 'all' | 'freshmen' | 'graduating' | 'specific';
+  /** Audiences the event is announced to (multi-select). */
+  audience: AudienceTag[];
   audience_detail_en?: string;
   audience_detail_ar?: string;
-  /** Estimated number of students the audience reaches. */
+  /** When 'staff' is in the audience: all staff or specific departments. */
+  staff_scope?: StaffScope;
+  /** Department keys selected when staff_scope === 'departments'. */
+  staff_departments?: string[];
+  /** Estimated number of people the audience reaches. */
   audience_size: number;
   /** Whether students can register for the event (toggled by Student Life). */
   registration_open: boolean;
@@ -1498,14 +2090,14 @@ const STUDENT_LIFE_EVENTS: StudentLifeEvent[] = [
     location_en: 'Main Hall', location_ar: 'القاعة الرئيسية',
     description_en: 'Annual career fair connecting students with employers across Kuwait.',
     description_ar: 'معرض التوظيف السنوي الذي يربط الطلبة بأصحاب العمل في الكويت.',
-    scope: 'internal', audience: 'all', audience_size: 4200,
+    scope: 'internal', audience: ['all'], audience_size: 4200,
     registration_open: true, registrations: 142 },
   { id: 'evt2', title_en: 'Hackathon: AI for Education', title_ar: 'هاكاثون: الذكاء الاصطناعي للتعليم',
     date: '2026-06-02', time: '10:00 - 18:00',
     location_en: 'Computer Lab CP-1', location_ar: 'مختبر الحاسوب CP-1',
     description_en: 'A one-day hackathon building AI-powered learning tools.',
     description_ar: 'هاكاثون ليوم واحد لبناء أدوات تعليمية مدعومة بالذكاء الاصطناعي.',
-    scope: 'internal', audience: 'specific',
+    scope: 'internal', audience: ['specific'],
     audience_detail_en: 'Computer Science Club', audience_detail_ar: 'نادي علوم الحاسوب',
     audience_size: 120,
     registration_open: true, registrations: 38 },
@@ -1514,14 +2106,14 @@ const STUDENT_LIFE_EVENTS: StudentLifeEvent[] = [
     location_en: 'Sports Complex', location_ar: 'المجمع الرياضي',
     description_en: 'Inter-college tournament hosted with partner institutions.',
     description_ar: 'بطولة بين الكليات تُقام بالتعاون مع المؤسسات الشريكة.',
-    scope: 'external', audience: 'all', audience_size: 4200,
+    scope: 'external', audience: ['all'], audience_size: 4200,
     registration_open: false, registrations: 0 },
   { id: 'evt4', title_en: 'Graduating Class Ceremony', title_ar: 'حفل الدفعة المتخرجة',
     date: '2026-06-20', time: '17:00 - 20:00',
     location_en: 'Grand Auditorium', location_ar: 'المسرح الكبير',
     description_en: 'Commencement ceremony for the graduating class of 2026.',
     description_ar: 'حفل تخريج دفعة عام ٢٠٢٦.',
-    scope: 'internal', audience: 'graduating', audience_size: 620,
+    scope: 'internal', audience: ['graduating'], audience_size: 620,
     registration_open: true, registrations: 76 },
 ];
 
@@ -1703,7 +2295,7 @@ const IT_TICKETS: ITTicket[] = [
   { id: 'IT-2026-051', student_id: '20231022', student_name_en: 'Lina Al-Otaibi', student_name_ar: 'لينا العتيبي',
     category: 'account_access', problem_key: 'password_reset', origin_department: 'it',
     status: 'open', assigned_to_en: null, assigned_to_ar: null, created_at: '2026-04-26T08:10:00Z',
-    description: 'Cannot reset CCK-Hub password — reset email never arrives.' },
+    description: 'Cannot reset CCK-Hub password - reset email never arrives.' },
   { id: 'IT-2026-052', student_id: '20211045', student_name_en: 'Yousef Al-Mutairi', student_name_ar: 'يوسف المطيري',
     category: 'sis_lms', problem_key: 'timetable_missing', origin_department: 'registration',
     status: 'in_progress', assigned_to_en: 'IT Helpdesk', assigned_to_ar: 'مكتب الدعم التقني',
@@ -1791,6 +2383,16 @@ export const api = {
   getIntegrations: async () => withErrorHandling('getIntegrations', async () => { await delay(); return INTEGRATIONS; }),
   triggerSync: async () => withErrorHandling('triggerSync', async () => { await delay(500); return { sync_id: `sync_${Date.now()}`, status: 'started' }; }),
   getStudentProfile: async (id: string) => withErrorHandling('getStudentProfile', async () => { await delay(); return STUDENT_PROFILES[id] || generateProfile(id); }),
+
+  // Student Profiles - unified SIS + LMS + App record, searchable by name/number
+  getStudentRecords: async () => withErrorHandling('getStudentRecords', async () => {
+    await delay();
+    return STUDENT_RECORDS.map(toDirectoryEntry);
+  }),
+  getStudentRecord: async (id: string) => withErrorHandling('getStudentRecord', async () => {
+    await delay();
+    return STUDENT_RECORDS.find((s) => s.id === id || s.student_number === id) ?? null;
+  }),
   getAuditLog: async () => withErrorHandling('getAuditLog', async () => { await delay(); return AUDIT_LOG; }),
   getPaymentAnalytics: async () => withErrorHandling('getPaymentAnalytics', async () => { await delay(); return PAYMENT_ANALYTICS; }),
 
@@ -2003,13 +2605,105 @@ export const api = {
     return { id, status, updated_at: new Date().toISOString() };
   }),
 
-  // Rejecting a request records the reason and emails it to the student
-  // (CCK Hub Update.pdf — rejections must notify the student with a reason).
-  rejectRequest: async (id: string, reason: string) => withErrorHandling('rejectRequest', async () => {
+  // Faculty submit a Change of Grade or Incomplete "I" request (CCK Hub Update
+  // 17-06-26). Routes straight to the Head of Department for approval.
+  createAcademicRequest: async (
+    type: 'change_of_grade' | 'incomplete_grade',
+    details: ChangeOfGradeDetails | IncompleteGradeDetails,
+    instructor: { en: string; ar: string },
+  ) => withErrorHandling('createAcademicRequest', async () => {
+    await delay(400);
+    const now = new Date().toISOString();
+    const id = `REQ-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+    const isCog = type === 'change_of_grade';
+    return {
+      id,
+      type,
+      student_id: details.cck_id,
+      student_name_en: details.student_name,
+      student_name_ar: details.student_name,
+      status: 'submitted' as RequestStatus,
+      submitted_at: now,
+      assigned_to_en: `${instructor.en} (HoD)`,
+      assigned_to_ar: `${instructor.ar} (رئيس القسم)`,
+      auto_assigned: true,
+      payment_status: 'not_required' as const,
+      workflow: isCog ? wfGradeChange(0, now) : wfIncomplete(0, now),
+      attachments: [],
+      comments: [],
+      ...(isCog
+        ? { change_of_grade_details: details as ChangeOfGradeDetails }
+        : { incomplete_grade_details: details as IncompleteGradeDetails }),
+    } satisfies StudentRequest;
+  }),
+
+  // Head of Department approves (→ VPAA for Change of Grade, → Registration
+  // Manager for Incomplete) or rejects an academic request.
+  hodDecision: async (id: string, decision: 'approve' | 'reject', comment?: string) =>
+    withErrorHandling('hodDecision', async () => {
+      await delay(400);
+      if (decision === 'reject') {
+        return {
+          id, decision, status: 'rejected' as RequestStatus,
+          rejection_reason: comment, decided_at: new Date().toISOString(),
+        };
+      }
+      return {
+        id, decision, status: 'in_progress' as RequestStatus,
+        decided_at: new Date().toISOString(),
+      };
+    }),
+
+  // V.P. for Academic Affairs approves (→ Registration Manager) or rejects a
+  // Change of Grade request (the paper form is addressed to the VPAA Office).
+  vpaaDecision: async (id: string, decision: 'approve' | 'reject', comment?: string) =>
+    withErrorHandling('vpaaDecision', async () => {
+      await delay(400);
+      if (decision === 'reject') {
+        return {
+          id, decision, status: 'rejected' as RequestStatus,
+          rejection_reason: comment, decided_at: new Date().toISOString(),
+        };
+      }
+      return {
+        id, decision, status: 'in_progress' as RequestStatus,
+        decided_at: new Date().toISOString(),
+      };
+    }),
+
+  // Registration Manager updates the grade in SIS and confirms the entry,
+  // completing the request (CCK Hub Update 17-06-26).
+  confirmSisEntry: async (id: string) => withErrorHandling('confirmSisEntry', async () => {
+    await delay(400);
+    return { id, status: 'completed' as RequestStatus, confirmed_at: new Date().toISOString() };
+  }),
+
+  // Rejecting a request records the reason and notifies the student through
+  // every channel we have (email + WhatsApp + push), so staff never need a
+  // separate "send notification" step.
+  rejectRequest: async (id: string, reason: string, code?: RejectReasonCode) => withErrorHandling('rejectRequest', async () => {
     await delay(400);
     return {
       id, status: 'rejected' as RequestStatus, rejection_reason: reason,
-      student_notified: true, rejected_at: new Date().toISOString(),
+      rejection_reason_code: code,
+      student_notified: true,
+      notified_channels: ['email', 'whatsapp', 'push'] as const,
+      rejected_at: new Date().toISOString(),
+    };
+  }),
+
+  /** Weekly digest of pending requests sent to managers (feedback). The
+   *  dashboard surfaces this as a small status card so staff can see the
+   *  schedule and last-run timestamp at a glance. */
+  getManagerDigestStatus: async () => withErrorHandling('getManagerDigestStatus', async () => {
+    await delay(100);
+    return {
+      cadence: 'weekly',
+      day: 'Sunday',
+      day_ar: 'الأحد',
+      last_sent_at: '2026-05-17T07:00:00Z',
+      next_run_at: '2026-05-24T07:00:00Z',
+      recipients: 6,
     };
   }),
 
@@ -2028,9 +2722,56 @@ export const api = {
     return { id: `c_${Date.now()}`, request_id: id, body, created_at: new Date().toISOString() };
   }),
 
+  // Internal call fired automatically when an admin marks a request completed
+  // - the platform pushes the update via email, WhatsApp and push at once.
   notifyRequestStudent: async (id: string) => withErrorHandling('notifyRequestStudent', async () => {
     await delay(400);
-    return { id, notified: true, sent_at: new Date().toISOString() };
+    return {
+      id,
+      notified: true,
+      channels: ['email', 'whatsapp', 'push'] as const,
+      sent_at: new Date().toISOString(),
+    };
+  }),
+
+  /** Student contact lookup for the Requests detail panel - feedback flagged
+   *  that phone, emergency contact and address must be visible on the page. */
+  getStudentContact: async (studentId: string) => withErrorHandling('getStudentContact', async () => {
+    await delay(100);
+    return STUDENT_CONTACTS[studentId] ?? {};
+  }),
+
+  /** Semester selector + close-semester guard. Closing requires zero pending
+   *  requests for the semester (feedback: must clear pending requests first). */
+  getSemesters: async () => withErrorHandling('getSemesters', async () => {
+    await delay(100);
+    return [...SEMESTERS];
+  }),
+  getPendingCountForSemester: async (semesterKey: string) => withErrorHandling('getPendingCountForSemester', async () => {
+    await delay(100);
+    const activeKey = SEMESTERS.find((s) => s.status === 'active')?.key;
+    // The active semester aggregates everything currently in flight; closed
+    // semesters have already been drained, so they always read zero.
+    if (semesterKey !== activeKey) return 0;
+    return STUDENT_REQUESTS.filter((r) =>
+      r.status === 'submitted' || r.status === 'in_progress').length;
+  }),
+  closeSemester: async (semesterKey: string) => withErrorHandling('closeSemester', async () => {
+    await delay(300);
+    const pending = STUDENT_REQUESTS.filter((r) =>
+      r.status === 'submitted' || r.status === 'in_progress').length;
+    if (pending > 0) {
+      throw new Error(`Cannot close semester: ${pending} pending request(s) remain.`);
+    }
+    const sem = SEMESTERS.find((s) => s.key === semesterKey);
+    if (sem) sem.status = 'closed';
+    return { semester: semesterKey, status: 'closed' as SemesterStatus, closed_at: new Date().toISOString() };
+  }),
+
+  /** Bank-change window (feedback: bank changes only inside college-defined dates). */
+  getBankChangeWindow: async () => withErrorHandling('getBankChangeWindow', async () => {
+    await delay(100);
+    return { ...BANK_CHANGE_WINDOW };
   }),
 
   getAdmissionApplicants: async () => withErrorHandling('getAdmissionApplicants', async () => {
@@ -2043,12 +2784,28 @@ export const api = {
     return { id, decision, comment, decided_at: new Date().toISOString() };
   }),
 
+  // Records the admission deposit (150 KWD seat reservation for self-funded, or
+  // 10 KWD application fee for PUC) that unlocks the acceptance letter
+  // (CCK Hub Update 17-06-26).
+  recordAdmissionPayment: async (id: string) => withErrorHandling('recordAdmissionPayment', async () => {
+    await delay(400);
+    const paid_at = new Date().toISOString();
+    const applicant = ADMISSION_APPLICANTS.find((a) => a.id === id);
+    if (applicant) applicant.admission_payment = { ...applicant.admission_payment, paid: true, paid_at };
+    return { id, paid: true, paid_at };
+  }),
+
   generateAcceptanceLetter: async (id: string) => withErrorHandling('generateAcceptanceLetter', async () => {
+    const applicant = ADMISSION_APPLICANTS.find((a) => a.id === id);
+    if (applicant && !applicant.admission_payment.paid) {
+      throw new Error('Acceptance letter is locked until the admission payment is recorded.');
+    }
     await delay(500);
+    if (applicant) applicant.acceptance_letter_generated = true;
     return { id, letter_id: `letter_${Date.now()}`, generated_at: new Date().toISOString() };
   }),
 
-  // Registration's final enrolment step — issues the SIS Student ID and
+  // Registration's final enrolment step - issues the SIS Student ID and
   // closes the admission file (Admission-Registration Workflow doc).
   generateSisStudentId: async (id: string) => withErrorHandling('generateSisStudentId', async () => {
     await delay(500);
@@ -2058,7 +2815,7 @@ export const api = {
   }),
 
   // Admission staff opens a new student digital file (Admission-Registration
-  // Workflow doc — "Admission creates new student file").
+  // Workflow doc - "Admission creates new student file").
   createAdmissionApplicant: async (body: Record<string, unknown>) =>
     withErrorHandling('createAdmissionApplicant', async () => {
       await delay(500);
@@ -2090,9 +2847,14 @@ export const api = {
     return [...SOCIAL_APPLICATIONS];
   }),
 
-  updateSocialStatus: async (id: string, status: SocialApplication['status']) => withErrorHandling('updateSocialStatus', async () => {
+  getSocialApplication: async (id: string) => withErrorHandling('getSocialApplication', async () => {
     await delay();
-    return { id, status, updated_at: new Date().toISOString() };
+    return SOCIAL_APPLICATIONS.find((a) => a.id === id) ?? null;
+  }),
+
+  updateSocialStatus: async (id: string, status: SocialApplication['status'], reason?: string) => withErrorHandling('updateSocialStatus', async () => {
+    await delay();
+    return { id, status, reason, updated_at: new Date().toISOString() };
   }),
 
   markSocialSentToPuc: async (id: string) => withErrorHandling('markSocialSentToPuc', async () => {
@@ -2100,10 +2862,99 @@ export const api = {
     return { id, sent_to_puc: true, updated_at: new Date().toISOString() };
   }),
 
+  /** Per-document rejection on a Social Allowance application. Reason is one
+   *  of: not_clear, expired, irrelevant (feedback). */
+  rejectSocialDocument: async (
+    applicationId: string,
+    docKey: string,
+    reason: SocialDocRejectReason,
+  ) => withErrorHandling('rejectSocialDocument', async () => {
+    await delay(200);
+    return { applicationId, docKey, reason, rejected_at: new Date().toISOString() };
+  }),
+
+  /** Bundles all submitted documents for an SA application into a single PDF
+   *  in the screen-defined order (feedback). Mock returns a synthesised name. */
+  downloadSocialBundle: async (applicationId: string) => withErrorHandling('downloadSocialBundle', async () => {
+    await delay(400);
+    return {
+      applicationId,
+      file: `${applicationId}-bundle`,
+      generated_at: new Date().toISOString(),
+    };
+  }),
+
   getAppeals: async () => withErrorHandling('getAppeals', async () => {
     await delay();
     return [...APPEALS];
   }),
+
+  getAppeal: async (id: string) => withErrorHandling('getAppeal', async () => {
+    await delay();
+    return APPEALS.find((a) => a.id === id) ?? null;
+  }),
+
+  // Route a submitted appeal to the course instructor for the marks review
+  // (CCK Hub Update 17-06-26).
+  sendToFaculty: async (id: string) => withErrorHandling('sendToFaculty', async () => {
+    await delay(300);
+    return { id, stage: 'faculty_review' as AppealStage, status: 'in_progress' as Appeal['status'] };
+  }),
+
+  // Instructor records the LMS marks breakdown + feedback, advancing the appeal
+  // to the Appeal Committee.
+  submitFacultyReview: async (
+    id: string,
+    review: { faculty_comment: string; marks_breakdown: AppealMarksBreakdown; faculty_suggested_grade?: string },
+  ) => withErrorHandling('submitFacultyReview', async () => {
+    await delay(300);
+    return { id, stage: 'committee' as AppealStage, ...review };
+  }),
+
+  // Appeal Committee records its decision (Approve / Reject / Pending),
+  // optionally with a suggested final grade and rationale.
+  recordAppealDecision: async (
+    id: string,
+    decision: AppealDecision,
+    review?: { committee_suggested_grade?: string; committee_comment?: string },
+  ) =>
+    withErrorHandling('recordAppealDecision', async () => {
+      await delay(300);
+      const decided = decision !== 'pending';
+      return {
+        id,
+        committee_decision: decision,
+        committee_suggested_grade: review?.committee_suggested_grade,
+        committee_comment: review?.committee_comment,
+        stage: (decided ? 'decided' : 'committee') as AppealStage,
+        status: (decided ? 'completed' : 'in_progress') as Appeal['status'],
+        decided_at: decided ? new Date().toISOString() : undefined,
+      };
+    }),
+
+  // Sends the outcome email to faculty, student and student advising
+  // (Appeal Result Email Template). Mock: records recipients + sent flag.
+  sendAppealOutcomeEmail: async (id: string, recipients: string[]) =>
+    withErrorHandling('sendAppealOutcomeEmail', async () => {
+      await delay(400);
+      return {
+        id,
+        outcome_email: { sent: true, sent_at: new Date().toISOString(), recipients },
+      };
+    }),
+
+  // When the committee approves an appeal, generate the Change of Grade Form
+  // pre-filled from the appeal (SIS) and e-signed by the instructor, HoD, VPAA
+  // and Head of Admission & Registration. Mock: records the generated flag +
+  // the approved grade the form carries into SIS.
+  generateAppealGradeChange: async (id: string, newGrade: string) =>
+    withErrorHandling('generateAppealGradeChange', async () => {
+      await delay(400);
+      return {
+        id,
+        grade_change_form: { generated: true, generated_at: new Date().toISOString(), new_grade: newGrade },
+      };
+    }),
 
   getAppealsReleaseStatus: async () => withErrorHandling('getAppealsReleaseStatus', async () => {
     await delay();
@@ -2135,6 +2986,93 @@ export const api = {
     return { id, signed_at: new Date().toISOString() };
   }),
 
+  getAdvisingAppointments: async () => withErrorHandling('getAdvisingAppointments', async () => {
+    await delay();
+    return [...ADVISING_APPOINTMENTS];
+  }),
+
+  /** Schedule a new advising meeting for a student. Best-effort POST to the
+   *  backend admin service (when NEXT_PUBLIC_API_URL is set) so it reaches the
+   *  student app via the shared DB; always records it in the local list too. */
+  createAdvisingAppointment: async (input: {
+    type: AdvisingMeetingKey;
+    student_id: string;
+    student_name_en: string;
+    student_name_ar: string;
+    advisor_en: string;
+    advisor_ar: string;
+    scheduled_at: string;
+    duration_min: number;
+    location_en: string;
+    location_ar: string;
+    notes?: string;
+  }) => withErrorHandling('createAdvisingAppointment', async () => {
+    const titles: Record<string, { ar: string; en: string }> = {
+      gpa_warning: { ar: 'موعد إنذار المعدل', en: 'GPA Warning Appointment' },
+      absence_2nd_warning: { ar: 'موعد إنذار الغياب الثاني', en: 'Absence 2nd Warning Appointment' },
+    };
+    const title = titles[input.type] ?? { ar: 'موعد إرشاد أكاديمي', en: 'Advising Appointment' };
+
+    const base = process.env.NEXT_PUBLIC_API_URL;
+    if (base) {
+      try {
+        const devToken = process.env.NEXT_PUBLIC_DEV_TOKEN;
+        await fetch(`${base}/api/v1/admin/students/${input.student_id}/advising-meetings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(devToken ? { Authorization: `Bearer ${devToken}` } : {}),
+          },
+          body: JSON.stringify({
+            type: input.type,
+            title_ar: title.ar,
+            title_en: title.en,
+            advisor_ar: input.advisor_ar,
+            advisor_en: input.advisor_en,
+            scheduled_at: input.scheduled_at,
+            location_ar: input.location_ar,
+            location_en: input.location_en,
+            notes_ar: input.notes ?? null,
+            notes_en: input.notes ?? null,
+          }),
+        });
+      } catch {
+        // backend unreachable - keep the local record only
+      }
+    }
+
+    await delay();
+    const appt: AdvisingAppointment = {
+      id: `apt_${Date.now()}`,
+      ...input,
+      status: 'accepted',
+      source_en: 'Scheduled by admin',
+      source_ar: 'تم تحديده بواسطة الإدارة',
+    };
+    ADVISING_APPOINTMENTS.unshift(appt);
+    return appt;
+  }),
+
+  acceptAppointment: async (id: string) => withErrorHandling('acceptAppointment', async () => {
+    await delay();
+    return { id, status: 'accepted' as AppointmentStatus, updated_at: new Date().toISOString() };
+  }),
+
+  rescheduleAppointment: async (id: string, scheduled_at: string) => withErrorHandling('rescheduleAppointment', async () => {
+    await delay();
+    return { id, scheduled_at, status: 'accepted' as AppointmentStatus, updated_at: new Date().toISOString() };
+  }),
+
+  completeAppointment: async (id: string) => withErrorHandling('completeAppointment', async () => {
+    await delay();
+    return { id, status: 'completed' as AppointmentStatus, updated_at: new Date().toISOString() };
+  }),
+
+  cancelAppointment: async (id: string) => withErrorHandling('cancelAppointment', async () => {
+    await delay();
+    return { id, status: 'cancelled' as AppointmentStatus, updated_at: new Date().toISOString() };
+  }),
+
   getFeedback: async () => withErrorHandling('getFeedback', async () => {
     await delay();
     return [...FEEDBACK_ENTRIES];
@@ -2150,12 +3088,12 @@ export const api = {
     return [...SPORT_APPLICATIONS];
   }),
 
-  decideSport: async (id: string, decision: 'approved' | 'rejected') => withErrorHandling('decideSport', async () => {
+  decideSport: async (id: string, decision: 'approved' | 'rejected', reason?: string) => withErrorHandling('decideSport', async () => {
     await delay();
-    return { id, status: decision, updated_at: new Date().toISOString() };
+    return { id, status: decision, reason, updated_at: new Date().toISOString() };
   }),
 
-  // Student Life — events
+  // Student Life - events
   getStudentLifeEvents: async () => withErrorHandling('getStudentLifeEvents', async () => {
     await delay();
     return [...STUDENT_LIFE_EVENTS];
@@ -2204,17 +3142,17 @@ export const api = {
     return ntf;
   }),
 
-  // Student Life — club joining requests routed to the Club Advisor
+  // Student Life - club joining requests routed to the Club Advisor
   getClubJoinRequests: async () => withErrorHandling('getClubJoinRequests', async () => {
     await delay();
     return [...CLUB_JOIN_REQUESTS];
   }),
-  decideClubRequest: async (id: string, decision: 'approved' | 'rejected') => withErrorHandling('decideClubRequest', async () => {
+  decideClubRequest: async (id: string, decision: 'approved' | 'rejected', reason?: string) => withErrorHandling('decideClubRequest', async () => {
     await delay();
-    return { id, status: decision, updated_at: new Date().toISOString() };
+    return { id, status: decision, reason, updated_at: new Date().toISOString() };
   }),
 
-  // Student Life — complaint committee loop
+  // Student Life - complaint committee loop
   sendComplaintToCommittee: async (id: string) => withErrorHandling('sendComplaintToCommittee', async () => {
     await delay(400);
     return { id, committee_stage: 'with_committee' as CommitteeStage, sent_at: new Date().toISOString() };
@@ -2229,13 +3167,13 @@ export const api = {
     return [...DIRECTORY_ENTRIES];
   }),
 
-  // Schedule Process & Rules — halls and merged-course reference
+  // Schedule Process & Rules - halls and merged-course reference
   getScheduleConfig: async () => withErrorHandling('getScheduleConfig', async () => {
     await delay();
     return { halls: [...SCHEDULE_HALLS], merged_courses: [...MERGED_COURSE_PAIRS] };
   }),
 
-  // IT Helpdesk — ticket queue
+  // IT Helpdesk - ticket queue
   getITTickets: async () => withErrorHandling('getITTickets', async () => {
     await delay();
     return [...IT_TICKETS].sort((a, b) =>
@@ -2254,5 +3192,48 @@ export const api = {
   getEquivalency: async () => withErrorHandling('getEquivalency', async () => {
     await delay();
     return { entries: EQUIVALENCY, paaet_entries: PAAET_EQUIVALENCY, rules: EQUIVALENCY_RULES };
+  }),
+
+  // Staff edit of a single equivalency course row. Identified by college + the
+  // row's index in its source sheet. Mutates the in-memory data so the change
+  // is reflected for the rest of the session (mock store - no persistence yet).
+  updateEquivalencyEntry: async (
+    college: 'CCK' | 'PAAET',
+    index: number,
+    patch: Partial<{
+      name: string;
+      code: string;
+      credit: string;
+      cckMajor: string;
+      paaetProgram: string;
+      remarks: string;
+    }>,
+  ) => withErrorHandling('updateEquivalencyEntry', async () => {
+    await delay();
+    const clean = (v: string) => v.trim();
+    const nullable = (v: string) => (v.trim() === '' ? null : v.trim());
+    if (college === 'CCK') {
+      const e = EQUIVALENCY[index];
+      if (!e) throw new Error('Course not found');
+      if (patch.name !== undefined) e.cck_course_name = clean(patch.name);
+      if (patch.code !== undefined) e.cck_code_raw = nullable(patch.code);
+      if (patch.credit !== undefined) {
+        const n = Number(patch.credit);
+        e.cck_credit = patch.credit.trim() === '' || Number.isNaN(n) ? null : n;
+      }
+      if (patch.cckMajor !== undefined) e.cck_major = clean(patch.cckMajor);
+      if (patch.paaetProgram !== undefined) e.paaet_program = clean(patch.paaetProgram);
+      if (patch.remarks !== undefined) e.remarks = nullable(patch.remarks);
+      return { college, index, entry: { ...e } };
+    }
+    const e = PAAET_EQUIVALENCY[index];
+    if (!e) throw new Error('Course not found');
+    if (patch.name !== undefined) e.paaet_course_name = clean(patch.name);
+    if (patch.code !== undefined) e.paaet_code = clean(patch.code);
+    if (patch.credit !== undefined) e.credit = clean(patch.credit);
+    if (patch.cckMajor !== undefined) e.cck_major = clean(patch.cckMajor);
+    if (patch.paaetProgram !== undefined) e.paaet_program = clean(patch.paaetProgram);
+    if (patch.remarks !== undefined) e.remarks = nullable(patch.remarks);
+    return { college, index, entry: { ...e } };
   }),
 };

@@ -1,11 +1,14 @@
 export * from './university';
 export * from './student';
 export * from './course';
+export * from './catalog';
+export * from './reference';
 export * from './enrollment';
 export * from './payment';
 export * from './event';
 export * from './ai';
 export * from './admin';
+export * from './service-request';
 
 // Shared response envelope
 export interface ApiResponse<T> {
@@ -41,6 +44,7 @@ export interface AuthUser {
   email: string;
   name_ar: string;
   name_en: string;
+  funding_type?: import('./student').FundingType | null;
 }
 
 export interface TokenPair {

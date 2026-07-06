@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, type StudentLifeEvent } from '@/lib/api';
+import { api, STAFF_DEPARTMENTS, type StudentLifeEvent, type AudienceTag, type StaffScope } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 interface CreateEventModalProps {
@@ -10,9 +10,10 @@ interface CreateEventModalProps {
 }
 
 type Scope = StudentLifeEvent['scope'];
-type Audience = StudentLifeEvent['audience'];
 
-const AUDIENCE_SIZE: Record<Audience, number> = {
+const AUDIENCE_TAGS: AudienceTag[] = ['all', 'freshmen', 'graduating', 'specific', 'staff'];
+
+const STUDENT_SIZE: Record<'all' | 'freshmen' | 'graduating' | 'specific', number> = {
   all: 4200,
   freshmen: 950,
   graduating: 620,
@@ -33,9 +34,34 @@ export default function CreateEventModal({ onClose, onCreated }: CreateEventModa
   const [descEn, setDescEn] = useState('');
   const [descAr, setDescAr] = useState('');
   const [scope, setScope] = useState<Scope>('internal');
-  const [audience, setAudience] = useState<Audience>('all');
+  const [audience, setAudience] = useState<AudienceTag[]>(['all']);
   const [groupEn, setGroupEn] = useState('');
   const [groupAr, setGroupAr] = useState('');
+  const [staffScope, setStaffScope] = useState<StaffScope>('all');
+  const [staffDepts, setStaffDepts] = useState<string[]>([]);
+
+  const toggleAudience = (tag: AudienceTag) =>
+    setAudience((prev) => (prev.includes(tag) ? prev.filter((a) => a !== tag) : [...prev, tag]));
+  const toggleDept = (key: string) =>
+    setStaffDepts((prev) => (prev.includes(key) ? prev.filter((d) => d !== key) : [...prev, key]));
+
+  const computeSize = () => {
+    let size = 0;
+    if (audience.includes('all')) {
+      size += STUDENT_SIZE.all;
+    } else {
+      if (audience.includes('freshmen')) size += STUDENT_SIZE.freshmen;
+      if (audience.includes('graduating')) size += STUDENT_SIZE.graduating;
+    }
+    if (audience.includes('specific')) size += STUDENT_SIZE.specific;
+    if (audience.includes('staff')) {
+      const depts = staffScope === 'all'
+        ? STAFF_DEPARTMENTS
+        : STAFF_DEPARTMENTS.filter((d) => staffDepts.includes(d.key));
+      size += depts.reduce((sum, d) => sum + d.size, 0);
+    }
+    return size;
+  };
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -49,8 +75,11 @@ export default function CreateEventModal({ onClose, onCreated }: CreateEventModa
   }, [onClose]);
 
   const submit = async () => {
-    const valid = titleEn.trim() && titleAr.trim() && date &&
-      (audience !== 'specific' || (groupEn.trim() && groupAr.trim()));
+    const hasSpecific = audience.includes('specific');
+    const hasStaff = audience.includes('staff');
+    const valid = titleEn.trim() && titleAr.trim() && date && audience.length > 0 &&
+      (!hasSpecific || (groupEn.trim() && groupAr.trim())) &&
+      (!hasStaff || staffScope === 'all' || staffDepts.length > 0);
     if (!valid) { setError(true); return; }
     setError(false);
     setSaving(true);
@@ -66,9 +95,11 @@ export default function CreateEventModal({ onClose, onCreated }: CreateEventModa
         description_ar: descAr.trim() || undefined,
         scope,
         audience,
-        audience_detail_en: audience === 'specific' ? groupEn.trim() : undefined,
-        audience_detail_ar: audience === 'specific' ? groupAr.trim() : undefined,
-        audience_size: AUDIENCE_SIZE[audience],
+        audience_detail_en: hasSpecific ? groupEn.trim() : undefined,
+        audience_detail_ar: hasSpecific ? groupAr.trim() : undefined,
+        staff_scope: hasStaff ? staffScope : undefined,
+        staff_departments: hasStaff && staffScope === 'departments' ? staffDepts : undefined,
+        audience_size: computeSize(),
         registration_open: true,
       }) as StudentLifeEvent;
       onCreated(created);
@@ -77,16 +108,17 @@ export default function CreateEventModal({ onClose, onCreated }: CreateEventModa
     }
   };
 
-  const field = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pair-500';
-  const label = 'block text-xs font-medium text-[#737477] mb-1';
+  const field = 'cck-input';
+  const label = 'cck-label';
 
   return (
     <div role="dialog" aria-modal="true" dir={dir}
       className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
-      <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold">{t('studentLife.newEvent')}</h3>
+      <div className="absolute inset-0 bg-pine-900/50 backdrop-blur-[1px]" onClick={onClose} aria-hidden />
+      <div className="relative cck-card shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-4 border-b border-line flex items-center gap-3">
+          <span aria-hidden className="h-5 w-1 bg-pair-600 rounded-sm" />
+          <h3 className="cck-title text-lg">{t('studentLife.newEvent')}</h3>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -121,16 +153,31 @@ export default function CreateEventModal({ onClose, onCreated }: CreateEventModa
               <option value="external">{t('studentLife.scope.external')}</option>
             </select>
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className={label}>{t('studentLife.eventAudience')}</label>
-            <select className={field} value={audience} onChange={(e) => setAudience(e.target.value as Audience)}>
-              <option value="all">{t('studentLife.audience.all')}</option>
-              <option value="freshmen">{t('studentLife.audience.freshmen')}</option>
-              <option value="graduating">{t('studentLife.audience.graduating')}</option>
-              <option value="specific">{t('studentLife.audience.specific')}</option>
-            </select>
+            <div className="flex flex-wrap gap-2">
+              {AUDIENCE_TAGS.map((tag) => {
+                const active = audience.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleAudience(tag)}
+                    aria-pressed={active}
+                    className={`px-3 py-1.5 border rounded-sm text-sm font-semibold transition ${
+                      active
+                        ? 'border-pair-600 bg-pair-50 text-pair-700'
+                        : 'border-line-strong text-ink hover:bg-canvas'
+                    }`}
+                  >
+                    {t(`studentLife.audience.${tag}`)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted mt-1">{t('studentLife.audienceHint')}</p>
           </div>
-          {audience === 'specific' && (
+          {audience.includes('specific') && (
             <>
               <div>
                 <label className={label}>{t('studentLife.audienceGroupEn')}</label>
@@ -141,6 +188,50 @@ export default function CreateEventModal({ onClose, onCreated }: CreateEventModa
                 <input className={field} value={groupAr} onChange={(e) => setGroupAr(e.target.value)} dir="rtl" />
               </div>
             </>
+          )}
+          {audience.includes('staff') && (
+            <div className="md:col-span-2">
+              <label className={label}>{t('studentLife.staffScope')}</label>
+              <div className="flex flex-wrap gap-2">
+                {(['all', 'departments'] as StaffScope[]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStaffScope(s)}
+                    aria-pressed={staffScope === s}
+                    className={`px-3 py-1.5 border rounded-sm text-sm font-semibold transition ${
+                      staffScope === s
+                        ? 'border-pair-600 bg-pair-50 text-pair-700'
+                        : 'border-line-strong text-ink hover:bg-canvas'
+                    }`}
+                  >
+                    {t(s === 'all' ? 'studentLife.staffAll' : 'studentLife.staffDepartments')}
+                  </button>
+                ))}
+              </div>
+              {staffScope === 'departments' && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {STAFF_DEPARTMENTS.map((d) => {
+                    const active = staffDepts.includes(d.key);
+                    return (
+                      <button
+                        key={d.key}
+                        type="button"
+                        onClick={() => toggleDept(d.key)}
+                        aria-pressed={active}
+                        className={`px-3 py-1.5 border rounded-sm text-sm font-medium transition ${
+                          active
+                            ? 'border-pair-600 bg-pair-50 text-pair-700'
+                            : 'border-gray-300 text-[#222] hover:bg-gray-50'
+                        }`}
+                      >
+                        {dir === 'rtl' ? d.label_ar : d.label_en}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
           <div className="md:col-span-2">
             <label className={label}>{t('studentLife.eventDescEn')}</label>
@@ -154,13 +245,11 @@ export default function CreateEventModal({ onClose, onCreated }: CreateEventModa
         {error && (
           <p className="px-6 text-sm text-danger-600">{t('studentLife.requiredFields')}</p>
         )}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 mt-2">
-          <button onClick={onClose} disabled={saving}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">
+        <div className="px-6 py-4 border-t border-line flex justify-end gap-3 mt-2">
+          <button onClick={onClose} disabled={saving} className="btn btn-outline">
             {t('common.cancel')}
           </button>
-          <button onClick={submit} disabled={saving}
-            className="px-4 py-2 text-sm bg-pair-600 text-white rounded-lg hover:bg-pair-700 disabled:opacity-50">
+          <button onClick={submit} disabled={saving} className="btn btn-primary">
             {saving ? t('studentLife.creating') : t('studentLife.create')}
           </button>
         </div>
